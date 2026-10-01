@@ -12,9 +12,9 @@ A sandbox for practicing incident response on Amazon EKS.
 
 ## Repository layout
 
-| Path     | Purpose                                  |
-|----------|------------------------------------------|
-| `infra/` | Terraform code for the AWS / EKS infra   |
+| Path         | Purpose                                         |
+|--------------|-------------------------------------------------|
+| `infra/eks/` | Terraform root module: VPC and EKS cluster      |
 
 More directories (application, traffic generator, chaos scenarios) will be added as the project grows.
 
@@ -28,7 +28,7 @@ More directories (application, traffic generator, chaos scenarios) will be added
 ## Create the cluster
 
 ```bash
-cd infra
+cd infra/eks
 cp terraform.tfvars.example terraform.tfvars   # set your IP in api_allowed_cidrs
 terraform init
 terraform apply
@@ -44,5 +44,5 @@ This repo creates real AWS resources that cost money.
 Always destroy the cluster when you are done:
 
 ```bash
-cd infra && terraform destroy
+cd infra/eks && terraform destroy
 ```
