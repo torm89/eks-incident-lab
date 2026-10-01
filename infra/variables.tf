@@ -1,23 +1,17 @@
 variable "region" {
-  description = "AWS region where the cluster is created."
+  description = "AWS region where all resources are created."
   type        = string
   default     = "eu-central-1"
 }
 
-variable "cluster_name" {
-  description = "Name of the EKS cluster. Also used as a prefix for related resources."
+variable "environment_name" {
+  description = "Name of the environment. Used as the VPC and EKS cluster name."
   type        = string
   default     = "torm-eks"
 }
 
-variable "kubernetes_version" {
-  description = "Kubernetes version of the EKS control plane."
-  type        = string
-  default     = "1.36"
-}
-
 variable "vpc_cidr" {
-  description = "CIDR block of the cluster VPC."
+  description = "CIDR block of the VPC."
   type        = string
   default     = "10.0.0.0/16"
 }
@@ -26,11 +20,12 @@ variable "availability_zone_count" {
   description = "Number of availability zones to spread subnets across. EKS requires at least 2."
   type        = number
   default     = 2
+}
 
-  validation {
-    condition     = var.availability_zone_count >= 2
-    error_message = "EKS requires subnets in at least 2 availability zones."
-  }
+variable "kubernetes_version" {
+  description = "Kubernetes version of the EKS control plane."
+  type        = string
+  default     = "1.36"
 }
 
 variable "node_instance_types" {
@@ -43,15 +38,10 @@ variable "node_capacity_type" {
   description = "Capacity type of worker nodes: ON_DEMAND or SPOT."
   type        = string
   default     = "SPOT"
-
-  validation {
-    condition     = contains(["ON_DEMAND", "SPOT"], var.node_capacity_type)
-    error_message = "node_capacity_type must be ON_DEMAND or SPOT."
-  }
 }
 
 variable "node_count" {
-  description = "Desired, minimum and maximum number of worker nodes."
+  description = "Minimum, desired and maximum number of worker nodes."
   type = object({
     min     = number
     desired = number

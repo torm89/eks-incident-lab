@@ -2,14 +2,14 @@ module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
   version = "~> 6.7"
 
-  name = var.cluster_name
+  name = var.name
   cidr = var.vpc_cidr
 
   azs             = local.availability_zones
   private_subnets = local.private_subnet_cidrs
   public_subnets  = local.public_subnet_cidrs
 
-  # One shared NAT gateway keeps the test cluster cheap.
+  # One shared NAT gateway keeps the test environment cheap.
   enable_nat_gateway = true
   single_nat_gateway = true
 

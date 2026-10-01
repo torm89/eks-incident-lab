@@ -1,6 +1,6 @@
-output "region" {
-  description = "AWS region of the cluster."
-  value       = var.region
+output "vpc_id" {
+  description = "ID of the VPC."
+  value       = module.network.vpc_id
 }
 
 output "cluster_name" {

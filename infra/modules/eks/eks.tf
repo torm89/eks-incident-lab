@@ -11,8 +11,8 @@ module "eks" {
   # Grants the identity running Terraform admin access to the cluster.
   enable_cluster_creator_admin_permissions = true
 
-  vpc_id     = module.vpc.vpc_id
-  subnet_ids = module.vpc.private_subnets
+  vpc_id     = var.vpc_id
+  subnet_ids = var.subnet_ids
 
   addons = {
     coredns = {}
