@@ -1,7 +1,13 @@
 variable "region" {
   description = "AWS region where all resources are created."
   type        = string
-  default     = "eu-central-1"
+  default     = "eu-west-1"
+}
+
+variable "aws_profile" {
+  description = "AWS CLI profile used to authenticate."
+  type        = string
+  default     = "<aws-profile>"
 }
 
 variable "environment_name" {

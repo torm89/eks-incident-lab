@@ -14,7 +14,7 @@ A sandbox for practicing incident response on Amazon EKS.
 
 | Path                     | Purpose                                              |
 |--------------------------|------------------------------------------------------|
-| `infra/`                 | Terraform root module: wires network and EKS together |
+| `infra/`                 | OpenTofu root module: wires network and EKS together |
 | `infra/modules/network/` | Child module: VPC, subnets, NAT gateway              |
 | `infra/modules/eks/`     | Child module: EKS cluster and node group             |
 
@@ -23,8 +23,8 @@ More directories (application, traffic generator, chaos scenarios) will be added
 ## Requirements
 
 - Python >= 3.12
-- Terraform
-- AWS CLI with configured credentials
+- OpenTofu >= 1.10
+- AWS CLI with the `<aws-profile>` profile configured
 - kubectl
 
 ## Create the cluster
@@ -32,13 +32,15 @@ More directories (application, traffic generator, chaos scenarios) will be added
 ```bash
 cd infra
 cp terraform.tfvars.example terraform.tfvars   # set your IP in api_allowed_cidrs
-terraform init
-terraform apply
-$(terraform output -raw configure_kubectl)
+tofu init
+tofu apply
+$(tofu output -raw configure_kubectl)
 kubectl get nodes
 ```
 
-Defaults: region `eu-central-1`, Kubernetes 1.36, 2 spot `t3.medium` nodes, single NAT gateway.
+Defaults: region `eu-west-1`, Kubernetes 1.36, 2 spot `t3.medium` nodes, single NAT gateway.
+
+State is stored in S3 bucket `<state-bucket>` (key `infra/terraform.tfstate`) with a lock file.
 
 ## Warning
 
@@ -46,5 +48,5 @@ This repo creates real AWS resources that cost money.
 Always destroy everything when you are done:
 
 ```bash
-cd infra && terraform destroy
+cd infra && tofu destroy
 ```
