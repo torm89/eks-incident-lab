@@ -1,0 +1,6 @@
+[project]
+name = "torm-eks"
+version = "0.1.0"
+description = "EKS sandbox for failure injection and incident-response practice"
+requires-python = ">=3.12"
+dependencies = []
