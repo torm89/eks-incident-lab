@@ -18,8 +18,9 @@ A sandbox for practicing incident response on Amazon EKS.
 | `infra/modules/network/` | Child module: VPC, subnets, NAT gateway              |
 | `infra/modules/eks/`     | Child module: EKS cluster and node group             |
 | `apps/retail-store/`     | Kustomize: EKS Workshop Retail Store Sample App      |
+| `traffic/`               | Kustomize: Artillery load generator for the app      |
 
-More directories (traffic generator, chaos scenarios) will be added as the project grows.
+More directories (chaos scenarios) will be added as the project grows.
 
 ## Requirements
 
@@ -52,6 +53,20 @@ kubectl apply -k apps/retail-store
 kubectl -n retail-store get pods
 kubectl -n retail-store port-forward svc/ui 8080:80   # open http://localhost:8080
 ```
+
+## Generate traffic
+
+An [Artillery](https://www.artillery.io/) Deployment runs the upstream shopper scenario
+(browse catalog, add to cart, checkout) against `http://ui.retail-store.svc`.
+
+```bash
+kubectl apply -k traffic
+kubectl -n traffic logs -f deploy/load-generator             # live stats every 10 s
+kubectl -n traffic scale deploy/load-generator --replicas=3  # more load
+kubectl delete -k traffic                                    # stop
+```
+
+Load knobs in `traffic/load-generator.yaml`: `replicas` and `arrivalRate` (new users per second, per replica).
 
 ## Warning
 

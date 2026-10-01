@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: load-generator
+  labels:
+    app.kubernetes.io/name: load-generator
+spec:
+  # Each replica adds the same load. Scale to increase traffic.
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: load-generator
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: load-generator
+    spec:
+      initContainers:
+        # Copies scenario.yml and helpers.js. Tag matches the app release.
+        - name: copy-scenario
+          image: public.ecr.aws/aws-containers/retail-store-sample-utils:load-gen.1.6.3
+          command: ["sh", "-c", "cp /artillery/* /scenario/"]
+          volumeMounts:
+            - name: scenario
+              mountPath: /scenario
+      containers:
+        - name: artillery
+          image: artilleryio/artillery:2.0.34
+          args:
+            - run
+            - --target
+            - http://ui.retail-store.svc
+            # One long phase keeps the pod running instead of restarting.
+            # arrivalRate = new virtual users per second, per replica.
+            - --overrides
+            - '{"config":{"phases":[{"duration":86400,"arrivalRate":1}]}}'
+            - /scenario/scenario.yml
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 512Mi
+          volumeMounts:
+            - name: scenario
+              mountPath: /scenario
+      volumes:
+        - name: scenario
+          emptyDir: {}

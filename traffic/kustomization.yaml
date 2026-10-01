@@ -1,0 +1,11 @@
+# Synthetic traffic for the Retail Store Sample App.
+# Runs the upstream Artillery scenario (browse catalog, add to cart, checkout).
+# Load knobs: "replicas" and "arrivalRate" in load-generator.yaml.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: traffic
+
+resources:
+  - namespace.yaml
+  - load-generator.yaml

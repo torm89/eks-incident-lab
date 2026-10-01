@@ -23,6 +23,7 @@ This repo is a sandbox for incident-response practice on EKS:
 - AWS access goes through the `<aws-profile>` profile (account <account-id>, region eu-west-1).
 - Kubernetes apps live in `apps/<name>/` as Kustomize bases.
   - Third-party apps are referenced by a pinned release URL, never copied into the repo. Our changes go into `patches/`.
+- Synthetic traffic lives in `traffic/` (Kustomize, namespace `traffic`). The scenario image tag must match the app release in `apps/retail-store/`.
 - Python code targets Python >= 3.12 (see `pyproject.toml`).
 - Keep costs low: this is a test cluster. Prefer small instance types and make teardown (`tofu destroy`) easy.
 - Never commit secrets, state files or `.tfvars` with real credentials.
