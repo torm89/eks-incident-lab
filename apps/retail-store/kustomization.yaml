@@ -12,3 +12,13 @@ resources:
 
 patches:
   - path: patches/ui-service-cluster-ip.yaml
+
+# Grafana dashboard. Picked up by the Grafana sidecar from platform/monitoring.
+configMapGenerator:
+  - name: retail-store-dashboard
+    files:
+      - dashboards/retail-store.json
+    options:
+      disableNameSuffixHash: true
+      labels:
+        grafana_dashboard: "1"

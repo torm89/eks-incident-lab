@@ -19,6 +19,7 @@ A sandbox for practicing incident response on Amazon EKS.
 | `infra/modules/eks/`     | Child module: EKS cluster and node group             |
 | `apps/retail-store/`     | Kustomize: EKS Workshop Retail Store Sample App      |
 | `traffic/`               | Kustomize: Artillery load generator for the app      |
+| `platform/monitoring/`   | Kustomize + Helm: Prometheus and Grafana             |
 
 More directories (chaos scenarios) will be added as the project grows.
 
@@ -28,6 +29,7 @@ More directories (chaos scenarios) will be added as the project grows.
 - OpenTofu >= 1.10
 - AWS CLI with the `<aws-profile>` profile configured
 - kubectl
+- Helm 3 (kubectl's built-in kustomize does not work with Helm 4)
 
 ## Create the cluster
 
@@ -43,6 +45,19 @@ kubectl get nodes
 Defaults: region `eu-west-1`, Kubernetes 1.36, 2 spot `t3.medium` nodes, single NAT gateway.
 
 State is stored in S3 bucket `<state-bucket>` (key `infra/terraform.tfstate`) with a lock file.
+
+## Deploy monitoring
+
+[kube-prometheus-stack](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack)
+in namespace `monitoring`. CRDs go first, so the stack's custom resources can be created.
+
+```bash
+kubectl kustomize --enable-helm platform/monitoring/crds | kubectl apply --server-side -f -
+kubectl kustomize --enable-helm platform/monitoring | kubectl apply --server-side -f -
+kubectl -n monitoring port-forward svc/kube-prometheus-stack-grafana 3000:80   # open http://localhost:3000
+```
+
+Grafana has no login (it is reachable only via port-forward). Open dashboard **Retail Store**.
 
 ## Deploy the application
 

@@ -1,0 +1,11 @@
+# Prometheus Operator CRDs. Applied before the stack, so its custom resources
+# (Prometheus, ServiceMonitor, ...) can be created in one go.
+# Keep appVersion in sync with the operator in ../kustomization.yaml.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+helmCharts:
+  - name: prometheus-operator-crds
+    repo: https://prometheus-community.github.io/helm-charts
+    version: 32.0.1 # operator v0.94.1
+    releaseName: prometheus-operator-crds

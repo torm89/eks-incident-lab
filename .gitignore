@@ -10,3 +10,6 @@ __pycache__/
 *.tfvars
 crash.log
 .terraform.tfstate.lock.info
+
+# Kustomize Helm chart cache
+charts/

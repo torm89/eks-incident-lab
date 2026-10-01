@@ -19,10 +19,15 @@ This repo is a sandbox for incident-response practice on EKS:
   - `infra/modules/network/` - VPC, subnets, NAT gateway.
   - `infra/modules/eks/` - EKS cluster and node group.
   - Defaults live in the root `variables.tf`. Child module variables have no defaults.
-- Resources running inside the cluster (Helm charts, Kubernetes objects) go into a separate root module with its own state, never into `infra/` root. Kubernetes/Helm providers need an existing cluster.
+- Nothing that runs inside the cluster is managed by OpenTofu. Kubernetes objects are plain Kustomize, applied with kubectl, so destroying the cluster leaves no stale state.
 - AWS access goes through the `<aws-profile>` profile (account <account-id>, region eu-west-1).
+- Cluster-wide components live in `platform/<name>/` as Kustomize with `helmCharts` (pinned chart version + `values.yaml`).
+  - Build with `kubectl kustomize --enable-helm`, apply with `kubectl apply --server-side` (large CRDs). Requires Helm 3.
+  - CRDs are a separate kustomization (`crds/`), applied first.
+  - Helm hooks are not executed: disable chart features that depend on them.
 - Kubernetes apps live in `apps/<name>/` as Kustomize bases.
   - Third-party apps are referenced by a pinned release URL, never copied into the repo. Our changes go into `patches/`.
+- Grafana dashboards live next to the app they show (`apps/<name>/dashboards/*.json`), as ConfigMaps labelled `grafana_dashboard: "1"`.
 - Synthetic traffic lives in `traffic/` (Kustomize, namespace `traffic`). The scenario image tag must match the app release in `apps/retail-store/`.
 - Python code targets Python >= 3.12 (see `pyproject.toml`).
 - Keep costs low: this is a test cluster. Prefer small instance types and make teardown (`tofu destroy`) easy.
