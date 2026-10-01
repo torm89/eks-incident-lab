@@ -1,15 +1,3 @@
-variable "region" {
-  description = "AWS region where all resources are created."
-  type        = string
-  default     = "eu-west-1"
-}
-
-variable "aws_profile" {
-  description = "AWS CLI profile used to authenticate."
-  type        = string
-  default     = "<aws-profile>"
-}
-
 variable "environment_name" {
   description = "Name of the environment. Used as the VPC and EKS cluster name."
   type        = string
