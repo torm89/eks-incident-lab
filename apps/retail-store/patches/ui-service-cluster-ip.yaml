@@ -1,0 +1,8 @@
+# Keeps the UI private: no public load balancer, no extra cost.
+# Open it locally with: kubectl -n retail-store port-forward svc/ui 8080:80
+apiVersion: v1
+kind: Service
+metadata:
+  name: ui
+spec:
+  type: ClusterIP

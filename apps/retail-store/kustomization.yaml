@@ -1,0 +1,14 @@
+# Retail Store Sample App from the EKS Workshop.
+# Source: https://github.com/aws-containers/retail-store-sample-app
+# To upgrade, change the release version in the URL below.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: retail-store
+
+resources:
+  - namespace.yaml
+  - https://github.com/aws-containers/retail-store-sample-app/releases/download/v1.6.3/kubernetes.yaml
+
+patches:
+  - path: patches/ui-service-cluster-ip.yaml

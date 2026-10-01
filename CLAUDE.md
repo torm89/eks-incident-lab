@@ -21,6 +21,8 @@ This repo is a sandbox for incident-response practice on EKS:
   - Defaults live in the root `variables.tf`. Child module variables have no defaults.
 - Resources running inside the cluster (Helm charts, Kubernetes objects) go into a separate root module with its own state, never into `infra/` root. Kubernetes/Helm providers need an existing cluster.
 - AWS access goes through the `<aws-profile>` profile (account <account-id>, region eu-west-1).
+- Kubernetes apps live in `apps/<name>/` as Kustomize bases.
+  - Third-party apps are referenced by a pinned release URL, never copied into the repo. Our changes go into `patches/`.
 - Python code targets Python >= 3.12 (see `pyproject.toml`).
 - Keep costs low: this is a test cluster. Prefer small instance types and make teardown (`tofu destroy`) easy.
 - Never commit secrets, state files or `.tfvars` with real credentials.
