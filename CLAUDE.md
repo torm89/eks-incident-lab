@@ -27,7 +27,7 @@ This repo is a sandbox for incident-response practice on EKS:
   - Helm hooks are not executed: disable chart features that depend on them.
 - Kubernetes apps live in `apps/<name>/` as Kustomize bases.
   - Third-party apps are referenced by a pinned release URL, never copied into the repo. Our changes go into `patches/`.
-- Grafana dashboards live next to the app they show (`apps/<name>/dashboards/*.json`), as ConfigMaps labelled `grafana_dashboard: "1"`.
+- Grafana dashboards live in `platform/monitoring/dashboards/*.json`, generated as ConfigMaps labelled `grafana_dashboard: "1"`. `apps/` holds only the app and its patches.
 - Synthetic traffic lives in `traffic/` (Kustomize, namespace `traffic`). The scenario image tag must match the app release in `apps/retail-store/`.
 - Python code targets Python >= 3.12 (see `pyproject.toml`).
 - Keep costs low: this is a test cluster. Prefer small instance types and make teardown (`tofu destroy`) easy.

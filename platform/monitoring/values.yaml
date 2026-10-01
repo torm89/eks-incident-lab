@@ -35,11 +35,8 @@ grafana:
     auth.anonymous:
       enabled: true
       org_role: Admin
-  # Picks up dashboards from ConfigMaps labelled grafana_dashboard=1 in any namespace,
-  # e.g. the one generated in apps/retail-store.
-  sidecar:
-    dashboards:
-      searchNamespace: ALL
+  # Dashboards come from ConfigMaps labelled grafana_dashboard=1
+  # (see dashboards/ and configMapGenerator in kustomization.yaml).
 
 prometheus:
   prometheusSpec:
