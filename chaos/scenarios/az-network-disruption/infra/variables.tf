@@ -4,19 +4,13 @@ variable "cluster_name" {
   default     = "torm-eks"
 }
 
-variable "spot_interruption_notice" {
-  description = "Time between the spot interruption notice and the node being stopped (ISO 8601)."
-  type        = string
-  default     = "PT2M"
-}
-
-variable "disrupted_availability_zone" {
+variable "availability_zone" {
   description = "Availability zone whose private subnets lose network connectivity."
   type        = string
   default     = "eu-west-1a"
 }
 
-variable "network_disruption_duration" {
+variable "duration" {
   description = "How long the availability zone stays cut off (ISO 8601)."
   type        = string
   default     = "PT5M"

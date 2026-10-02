@@ -1,0 +1,7 @@
+# Shared Job that calls the built-in chaos API of a Retail Store service.
+# Scenarios set the HTTP method and URL with a patch and give the Job a unique name prefix.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - chaos-request-job.yaml

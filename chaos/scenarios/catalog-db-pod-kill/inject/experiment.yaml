@@ -1,0 +1,15 @@
+# One-shot: kills the catalog MySQL pod once. Its data lives in an emptyDir volume.
+apiVersion: chaos-mesh.org/v1alpha1
+kind: PodChaos
+metadata:
+  name: catalog-db-pod-kill
+  namespace: chaos-mesh
+spec:
+  action: pod-kill
+  mode: one
+  selector:
+    namespaces:
+      - retail-store
+    labelSelectors:
+      app.kubernetes.io/name: catalog
+      app.kubernetes.io/component: mysql

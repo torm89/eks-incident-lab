@@ -21,7 +21,6 @@ A sandbox for practicing incident response on Amazon EKS.
 | `traffic/`               | Kustomize: Artillery load generator for the app      |
 | `platform/monitoring/`   | Kustomize + Helm: Prometheus and Grafana             |
 | `chaos/`                 | Failure injection, see [chaos/README.md](chaos/README.md) |
-| `chaos/infra/`           | OpenTofu root module: AWS FIS experiment templates   |
 
 ## Requirements
 

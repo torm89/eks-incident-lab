@@ -1,0 +1,7 @@
+# Chaos Mesh CRDs. Applied before the engine.
+# Keep the version in sync with the chart in ../kustomization.yaml.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - https://raw.githubusercontent.com/chaos-mesh/chaos-mesh/v2.8.4/manifests/crd.yaml

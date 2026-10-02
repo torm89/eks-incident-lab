@@ -1,7 +1,7 @@
 terraform {
   backend "s3" {
     bucket       = "<state-bucket>"
-    key          = "chaos/terraform.tfstate"
+    key          = "chaos/az-network-disruption/terraform.tfstate"
     region       = "eu-west-1"
     profile      = "<aws-profile>"
     encrypt      = true

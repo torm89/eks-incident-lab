@@ -3,6 +3,9 @@ provider "aws" {
   profile = "<aws-profile>"
 
   default_tags {
-    tags = local.common_tags
+    tags = {
+      Project   = "torm-eks"
+      ManagedBy = "terraform"
+    }
   }
 }

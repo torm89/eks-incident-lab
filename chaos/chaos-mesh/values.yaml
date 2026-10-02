@@ -1,0 +1,18 @@
+# Values for the Chaos Mesh Helm chart, tuned for a small test cluster.
+# The chart generates webhook certificates on every render: apply this once per cluster.
+
+controllerManager:
+  replicaCount: 1
+
+chaosDaemon:
+  # EKS nodes run containerd, not docker.
+  runtime: containerd
+  socketPath: /run/containerd/containerd.sock
+
+dashboard:
+  # Reachable only through "kubectl port-forward", which already needs cluster credentials.
+  securityMode: false
+
+# Only needed for DNSChaos, which no scenario uses.
+dnsServer:
+  create: false

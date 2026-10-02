@@ -1,0 +1,28 @@
+# Drops all packets from the checkout service to its Redis for 5 minutes.
+apiVersion: chaos-mesh.org/v1alpha1
+kind: NetworkChaos
+metadata:
+  name: checkout-redis-network-loss
+  namespace: chaos-mesh
+spec:
+  action: loss
+  mode: all
+  selector:
+    namespaces:
+      - retail-store
+    labelSelectors:
+      app.kubernetes.io/name: checkout
+      app.kubernetes.io/component: service
+  direction: to
+  target:
+    mode: all
+    selector:
+      namespaces:
+        - retail-store
+      labelSelectors:
+        app.kubernetes.io/name: checkout
+        app.kubernetes.io/component: redis
+  loss:
+    loss: "100"
+    correlation: "0"
+  duration: 5m

@@ -16,7 +16,7 @@ This repo is a sandbox for incident-response practice on EKS:
 - Follow **clean code** principles: meaningful names, small single-purpose functions/modules, no dead code, no magic values, DRY.
 - **Infrastructure as code** lives in OpenTofu (>= 1.10, use `tofu`, not `terraform`). Do not create AWS resources by hand or via scripts. OpenTofu root modules:
   - `infra/` - the environment (network, EKS).
-  - `chaos/infra/` - AWS FIS experiment templates and their IAM role (state key `chaos/terraform.tfstate`). Targets are found by tags, never by IDs from `infra/` state.
+  - `chaos/scenarios/<name>/infra/` - one AWS FIS experiment template per scenario, with its own IAM role (shared module `chaos/modules/fis-role`) and state key `chaos/<name>/terraform.tfstate`. Targets are found by tags, never by IDs from `infra/` state.
 - `infra/` is a single root module (one state in S3 bucket `<state-bucket>`, locked with `use_lockfile`). `infra/main.tf` wires child modules together through their outputs:
   - `infra/modules/network/` - VPC, subnets, NAT gateway.
   - `infra/modules/eks/` - EKS cluster and node group.
@@ -30,7 +30,10 @@ This repo is a sandbox for incident-response practice on EKS:
 - Kubernetes apps live in `apps/<name>/` as Kustomize bases.
   - Third-party apps are referenced by a pinned release URL, never copied into the repo. Our changes go into `patches/`.
 - Grafana dashboards live in `platform/monitoring/dashboards/*.json`, generated as ConfigMaps labelled `grafana_dashboard: "1"`. `apps/` holds only the app and its patches.
-- Everything for failure injection lives in `chaos/`, including its own engines (e.g. Chaos Mesh) and AWS FIS (`chaos/infra/`). Chaos tooling is optional and installed only when practicing.
+- Everything for failure injection lives in `chaos/`. Chaos tooling is optional and installed only when practicing.
+  - `chaos/chaos-mesh/` - Chaos Mesh engine (same pattern as `platform/`: `crds/` first, then Helm via Kustomize).
+  - `chaos/base/` - shared Job that calls the app's built-in `/chaos/*` API.
+  - `chaos/scenarios/<name>/` - one folder per scenario: `README.md` (hypothesis, observe, diagnose, recover, verify, hidden solution) plus `inject/` + `recover/` (Kustomize) or `infra/` (OpenTofu, AWS FIS).
 - Synthetic traffic lives in `traffic/` (Kustomize, namespace `traffic`). The scenario image tag must match the app release in `apps/retail-store/`.
 - Python code targets Python >= 3.12 (see `pyproject.toml`).
 - Keep costs low: this is a test cluster. Prefer small instance types and make teardown (`tofu destroy`) easy.

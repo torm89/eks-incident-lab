@@ -1,0 +1,16 @@
+# Chaos Mesh engine. Needed only for Kubernetes-level scenarios (PodChaos, NetworkChaos, ...).
+# Deploy order: crds/ first, then this directory. See chaos/README.md.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - namespace.yaml
+
+helmCharts:
+  - name: chaos-mesh
+    repo: https://charts.chaos-mesh.org
+    version: 2.8.4
+    releaseName: chaos-mesh
+    namespace: chaos-mesh
+    includeCRDs: false # managed in crds/
+    valuesFile: values.yaml

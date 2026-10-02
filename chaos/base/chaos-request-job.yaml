@@ -1,0 +1,28 @@
+# Calls one /chaos/* endpoint and exits.
+# The chaos state lives in the memory of the target pod: a pod restart also clears it.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: chaos-request
+  namespace: retail-store
+spec:
+  backoffLimit: 2
+  # Deleted shortly after it finishes, so the scenario can be run again.
+  ttlSecondsAfterFinished: 60
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: curl
+          image: curlimages/curl:8.11.1
+          # Overridden by each scenario: [--request, <METHOD>, <URL>]
+          args: []
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              memory: 32Mi
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
