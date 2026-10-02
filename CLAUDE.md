@@ -14,20 +14,23 @@ This repo is a sandbox for incident-response practice on EKS:
 
 - **English only** in all code, comments, commit messages, file names and docs inside the repo.
 - Follow **clean code** principles: meaningful names, small single-purpose functions/modules, no dead code, no magic values, DRY.
-- **Infrastructure as code** lives in OpenTofu (>= 1.10, use `tofu`, not `terraform`), in the `infra/` directory. Do not create AWS resources by hand or via scripts outside `infra/`.
+- **Infrastructure as code** lives in OpenTofu (>= 1.10, use `tofu`, not `terraform`). Do not create AWS resources by hand or via scripts. OpenTofu root modules:
+  - `infra/` - the environment (network, EKS).
+  - `chaos/infra/` - AWS FIS experiment templates and their IAM role (state key `chaos/terraform.tfstate`). Targets are found by tags, never by IDs from `infra/` state.
 - `infra/` is a single root module (one state in S3 bucket `<state-bucket>`, locked with `use_lockfile`). `infra/main.tf` wires child modules together through their outputs:
   - `infra/modules/network/` - VPC, subnets, NAT gateway.
   - `infra/modules/eks/` - EKS cluster and node group.
   - Defaults live in the root `variables.tf`. Child module variables have no defaults.
 - Nothing that runs inside the cluster is managed by OpenTofu. Kubernetes objects are plain Kustomize, applied with kubectl, so destroying the cluster leaves no stale state.
 - AWS access goes through the `<aws-profile>` profile (account <account-id>, region eu-west-1).
-- Cluster-wide components live in `platform/<name>/` as Kustomize with `helmCharts` (pinned chart version + `values.yaml`).
+- Base cluster components (always installed) live in `platform/<name>/` as Kustomize with `helmCharts` (pinned chart version + `values.yaml`).
   - Build with `kubectl kustomize --enable-helm`, apply with `kubectl apply --server-side` (large CRDs). Requires Helm 3.
   - CRDs are a separate kustomization (`crds/`), applied first.
   - Helm hooks are not executed: disable chart features that depend on them.
 - Kubernetes apps live in `apps/<name>/` as Kustomize bases.
   - Third-party apps are referenced by a pinned release URL, never copied into the repo. Our changes go into `patches/`.
 - Grafana dashboards live in `platform/monitoring/dashboards/*.json`, generated as ConfigMaps labelled `grafana_dashboard: "1"`. `apps/` holds only the app and its patches.
+- Everything for failure injection lives in `chaos/`, including its own engines (e.g. Chaos Mesh) and AWS FIS (`chaos/infra/`). Chaos tooling is optional and installed only when practicing.
 - Synthetic traffic lives in `traffic/` (Kustomize, namespace `traffic`). The scenario image tag must match the app release in `apps/retail-store/`.
 - Python code targets Python >= 3.12 (see `pyproject.toml`).
 - Keep costs low: this is a test cluster. Prefer small instance types and make teardown (`tofu destroy`) easy.

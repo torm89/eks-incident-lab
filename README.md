@@ -20,8 +20,8 @@ A sandbox for practicing incident response on Amazon EKS.
 | `apps/retail-store/`     | Kustomize: EKS Workshop Retail Store Sample App      |
 | `traffic/`               | Kustomize: Artillery load generator for the app      |
 | `platform/monitoring/`   | Kustomize + Helm: Prometheus and Grafana             |
-
-More directories (chaos scenarios) will be added as the project grows.
+| `chaos/`                 | Failure injection, see [chaos/README.md](chaos/README.md) |
+| `chaos/infra/`           | OpenTofu root module: AWS FIS experiment templates   |
 
 ## Requirements
 
