@@ -25,4 +25,7 @@ spec:
               memory: 32Mi
           securityContext:
             runAsNonRoot: true
+            # curl_user in the image. Numeric, so the kubelet can verify it is not root.
+            runAsUser: 100
+            runAsGroup: 101
             allowPrivilegeEscalation: false
