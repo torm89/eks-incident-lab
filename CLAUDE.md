@@ -16,7 +16,7 @@ This repo is a sandbox for incident-response practice on EKS:
 - Follow **clean code** principles: meaningful names, small single-purpose functions/modules, no dead code, no magic values, DRY.
 - **Infrastructure as code** lives in OpenTofu (>= 1.10, use `tofu`, not `terraform`). Do not create AWS resources by hand or via scripts. OpenTofu root modules:
   - `infra/` - the environment (network, EKS).
-  - `chaos/scenarios/<name>/infra/` - one AWS FIS experiment template per scenario, with its own IAM role (shared module `chaos/modules/fis-role`) and state key `chaos/<name>/terraform.tfstate`. Targets are found by tags, never by IDs from `infra/` state.
+  - `chaos/scenarios/level-3-aws/<name>/infra/` - one AWS FIS experiment template per scenario, with its own IAM role (shared module `chaos/modules/fis-role`) and state key `chaos/<name>/terraform.tfstate`. Targets are found by tags, never by IDs from `infra/` state.
 - `infra/` is a single root module (one state in S3 bucket `<state-bucket>`, locked with `use_lockfile`). `infra/main.tf` wires child modules together through their outputs:
   - `infra/modules/network/` - VPC, subnets, NAT gateway.
   - `infra/modules/eks/` - EKS cluster and node group.
@@ -33,7 +33,7 @@ This repo is a sandbox for incident-response practice on EKS:
 - Everything for failure injection lives in `chaos/`. Chaos tooling is optional and installed only when practicing.
   - `chaos/chaos-mesh/` - Chaos Mesh engine (same pattern as `platform/`: `crds/` first, then Helm via Kustomize).
   - `chaos/base/` - shared Job that calls the app's built-in `/chaos/*` API.
-  - `chaos/scenarios/<name>/` - one folder per scenario: `README.md` (hypothesis, observe, diagnose, recover, verify, hidden solution) plus `inject/` + `recover/` (Kustomize) or `infra/` (OpenTofu, AWS FIS).
+  - `chaos/scenarios/level-<n>-<layer>/<name>/` - scenarios grouped by level: `level-1-application` (built-in chaos API), `level-2-kubernetes` (Chaos Mesh), `level-3-aws` (AWS FIS). Each has `README.md` (hypothesis, observe, diagnose, recover, verify, hidden solution) plus `inject/` + `recover/` (Kustomize) or `infra/` (OpenTofu).
 - Synthetic traffic lives in `traffic/` (Kustomize, namespace `traffic`). The scenario image tag must match the app release in `apps/retail-store/`.
 - Python code targets Python >= 3.12 (see `pyproject.toml`).
 - Keep costs low: this is a test cluster. Prefer small instance types and make teardown (`tofu destroy`) easy.

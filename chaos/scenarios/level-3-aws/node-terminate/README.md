@@ -11,7 +11,7 @@ Like a spot interruption, but sudden. The cluster runs on one node until the rep
 ## Inject
 
 ```bash
-cd chaos/scenarios/node-terminate/infra && tofu init && tofu apply
+cd chaos/scenarios/level-3-aws/node-terminate/infra && tofu init && tofu apply
 ```
 
 ```bash

@@ -11,7 +11,7 @@ Checkout hangs and fails. Browsing and the cart keep working. Everything recover
 ## Inject
 
 ```bash
-kubectl apply -k chaos/scenarios/checkout-redis-network-loss/inject
+kubectl apply -k chaos/scenarios/level-2-kubernetes/checkout-redis-network-loss/inject
 ```
 
 ## Observe
@@ -29,7 +29,7 @@ kubectl apply -k chaos/scenarios/checkout-redis-network-loss/inject
 ## Recover
 
 ```bash
-kubectl delete -k chaos/scenarios/checkout-redis-network-loss/inject
+kubectl delete -k chaos/scenarios/level-2-kubernetes/checkout-redis-network-loss/inject
 ```
 
 ## Verify

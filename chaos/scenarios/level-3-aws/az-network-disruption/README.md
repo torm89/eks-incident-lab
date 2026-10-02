@@ -11,7 +11,7 @@ The node in that AZ becomes `NotReady`. Its pods are unreachable, but Kubernetes
 ## Inject
 
 ```bash
-cd chaos/scenarios/az-network-disruption/infra && tofu init && tofu apply
+cd chaos/scenarios/level-3-aws/az-network-disruption/infra && tofu init && tofu apply
 ```
 
 ```bash

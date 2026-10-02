@@ -2,9 +2,9 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-  - ../../../base
+  - ../../../../base
 
-namePrefix: catalog-latency-inject-
+namePrefix: orders-http-500-recover-
 
 patches:
   - target:
@@ -13,4 +13,4 @@ patches:
     patch: |-
       - op: replace
         path: /spec/template/spec/containers/0/args
-        value: ["--fail", "--silent", "--show-error", "--request", "POST", "http://catalog.retail-store.svc/chaos/latency/2000"]
+        value: ["--fail", "--silent", "--show-error", "--request", "DELETE", "http://orders.retail-store.svc/chaos/status"]

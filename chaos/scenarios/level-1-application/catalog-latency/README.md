@@ -11,7 +11,7 @@ The whole store gets slow, but there are no errors.
 ## Inject
 
 ```bash
-kubectl create -k chaos/scenarios/catalog-latency/inject
+kubectl create -k chaos/scenarios/level-1-application/catalog-latency/inject
 ```
 
 ## Observe
@@ -28,7 +28,7 @@ kubectl create -k chaos/scenarios/catalog-latency/inject
 ## Recover
 
 ```bash
-kubectl create -k chaos/scenarios/catalog-latency/recover
+kubectl create -k chaos/scenarios/level-1-application/catalog-latency/recover
 ```
 
 ## Verify

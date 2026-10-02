@@ -11,7 +11,7 @@ MySQL restarts within a minute, but empty. The catalog keeps failing even though
 ## Inject
 
 ```bash
-kubectl apply -k chaos/scenarios/catalog-db-pod-kill/inject
+kubectl apply -k chaos/scenarios/level-2-kubernetes/catalog-db-pod-kill/inject
 ```
 
 ## Observe
@@ -33,7 +33,7 @@ kubectl -n retail-store rollout restart deploy/catalog
 ```
 
 ```bash
-kubectl delete -k chaos/scenarios/catalog-db-pod-kill/inject
+kubectl delete -k chaos/scenarios/level-2-kubernetes/catalog-db-pod-kill/inject
 ```
 
 ## Verify

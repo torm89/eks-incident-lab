@@ -14,26 +14,28 @@ Every scenario README has a hidden **Solution** section. Try first, then open it
 
 | Scenario | Level | Tool | Setup |
 |---|---|---|---|
-| [orders-http-500](scenarios/orders-http-500/) | 1 - application | built-in chaos API | none |
-| [catalog-latency](scenarios/catalog-latency/) | 1 - application | built-in chaos API | none |
-| [catalog-db-pod-kill](scenarios/catalog-db-pod-kill/) | 2 - Kubernetes | Chaos Mesh | Chaos Mesh |
-| [checkout-redis-network-loss](scenarios/checkout-redis-network-loss/) | 2 - Kubernetes | Chaos Mesh | Chaos Mesh |
-| [node-spot-interruption](scenarios/node-spot-interruption/) | 3 - AWS | AWS FIS | `tofu apply` in the scenario |
-| [node-terminate](scenarios/node-terminate/) | 3 - AWS | AWS FIS | `tofu apply` in the scenario |
-| [az-network-disruption](scenarios/az-network-disruption/) | 3 - AWS | AWS FIS | `tofu apply` in the scenario |
+| [orders-http-500](scenarios/level-1-application/orders-http-500/) | 1 - application | built-in chaos API | none |
+| [catalog-latency](scenarios/level-1-application/catalog-latency/) | 1 - application | built-in chaos API | none |
+| [catalog-db-pod-kill](scenarios/level-2-kubernetes/catalog-db-pod-kill/) | 2 - Kubernetes | Chaos Mesh | Chaos Mesh |
+| [checkout-redis-network-loss](scenarios/level-2-kubernetes/checkout-redis-network-loss/) | 2 - Kubernetes | Chaos Mesh | Chaos Mesh |
+| [node-spot-interruption](scenarios/level-3-aws/node-spot-interruption/) | 3 - AWS | AWS FIS | `tofu apply` in the scenario |
+| [node-terminate](scenarios/level-3-aws/node-terminate/) | 3 - AWS | AWS FIS | `tofu apply` in the scenario |
+| [az-network-disruption](scenarios/level-3-aws/az-network-disruption/) | 3 - AWS | AWS FIS | `tofu apply` in the scenario |
 
 ## Layout
 
 ```
 chaos/
-├── chaos-mesh/          Chaos Mesh engine (level 2), Kustomize + Helm
-├── base/                shared Job that calls the app's /chaos/* API (level 1)
-├── modules/fis-role/    OpenTofu module: IAM role for FIS (level 3)
-└── scenarios/<name>/
-    ├── README.md        hypothesis, signals, runbook, solution
-    ├── inject/          level 1-2: kustomization
-    ├── recover/         level 1: kustomization
-    └── infra/           level 3: OpenTofu root module, own state
+├── chaos-mesh/                 Chaos Mesh engine (level 2), Kustomize + Helm
+├── base/                       shared Job that calls the app's /chaos/* API (level 1)
+├── modules/fis-role/           OpenTofu module: IAM role for FIS (level 3)
+└── scenarios/
+    ├── level-1-application/    built-in chaos API
+    │   └── <name>/             README.md, inject/, recover/ (Kustomize)
+    ├── level-2-kubernetes/     Chaos Mesh
+    │   └── <name>/             README.md, inject/ (Kustomize)
+    └── level-3-aws/            AWS FIS
+        └── <name>/             README.md, infra/ (OpenTofu root, own state)
 ```
 
 ## Setup per level

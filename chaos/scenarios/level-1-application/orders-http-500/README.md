@@ -11,7 +11,7 @@ Browsing and the cart keep working. Placing an order fails.
 ## Inject
 
 ```bash
-kubectl create -k chaos/scenarios/orders-http-500/inject
+kubectl create -k chaos/scenarios/level-1-application/orders-http-500/inject
 ```
 
 ## Observe
@@ -29,7 +29,7 @@ kubectl create -k chaos/scenarios/orders-http-500/inject
 ## Recover
 
 ```bash
-kubectl create -k chaos/scenarios/orders-http-500/recover
+kubectl create -k chaos/scenarios/level-1-application/orders-http-500/recover
 ```
 
 ## Verify
