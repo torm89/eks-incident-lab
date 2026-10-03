@@ -77,29 +77,21 @@ Requirements: OpenTofu >= 1.10, AWS CLI with a configured profile, kubectl, **He
 
 ### Local setup (once)
 
-Your account details stay on your machine, never in the repo:
+Nothing to set up besides AWS credentials: pass your profile with `--profile` (or set `AWS_PROFILE`).
+The region is `eu-west-1`.
 
-1. An S3 bucket for OpenTofu state, then:
+**OpenTofu state is local by default** (`terraform.tfstate` in each root, git-ignored). That is fine for one person on
+one machine: the environment only exists during a session. Losing the file *while the cluster runs* means cleaning up by hand.
 
-   ```bash
-   cp backend.hcl.example backend.hcl   # git-ignored: set your bucket name
-   ```
+Optional, recommended if you keep the cluster up for longer or use several machines: **state in S3**.
 
-2. In every new shell, from the repo root, point the AWS tools and OpenTofu at your profile and bucket:
+```bash
+cp backend.hcl.example backend.hcl   # git-ignored: set your bucket and region
+```
 
-   ```powershell
-   # PowerShell
-   $env:AWS_PROFILE = "<your-aws-profile>"
-   $env:TF_CLI_ARGS_init = "-backend-config=$PWD/backend.hcl"
-   ```
-
-   ```bash
-   # bash / zsh
-   export AWS_PROFILE=<your-aws-profile>
-   export TF_CLI_ARGS_init="-backend-config=$PWD/backend.hcl"
-   ```
-
-The region is `eu-west-1` (set in the providers and backends).
+`lab.py` then writes a git-ignored `backend_override.tf` into every OpenTofu root and moves existing state to S3
+(or back to local files when you delete `backend.hcl`). Enable versioning on the bucket to be able to restore a damaged state.
+Before running `tofu` by hand in S3 mode, run `uv run scripts/lab.py state-backend` once.
 
 ### Run
 
@@ -237,7 +229,7 @@ The repository conventions the AI follows are in [CLAUDE.md](CLAUDE.md).
 ## Details
 
 - **Cluster defaults:** region `eu-west-1`, Kubernetes 1.36, 2 spot `t3.medium` nodes, public node subnets.
-- **State:** your S3 bucket from `backend.hcl`, key `infra/terraform.tfstate`, locked with `use_lockfile` (no DynamoDB table).
+- **State:** local `terraform.tfstate` files by default; with `backend.hcl` in your S3 bucket (key `infra/terraform.tfstate`, locked with `use_lockfile`, no DynamoDB table).
 - **Grafana** has no login: it is reachable only through `kubectl port-forward`.
 - **Store UI:** `kubectl -n retail-store port-forward svc/ui 8080:80`, then http://localhost:8080.
 - **More load:** `kubectl -n traffic scale deploy/load-generator --replicas=3`.

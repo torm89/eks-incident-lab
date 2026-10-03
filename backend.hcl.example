@@ -1,3 +1,5 @@
-# Copy to backend.hcl (git-ignored) and set your own S3 bucket for OpenTofu state.
-# Every OpenTofu root in this repo reads it, see README "Local setup".
+# Optional: keep OpenTofu state in S3 instead of local files.
+# Copy to backend.hcl (git-ignored) and set your bucket. scripts/lab.py then writes a
+# backend_override.tf (also git-ignored) into every OpenTofu root. Delete backend.hcl to go back to local state.
 bucket = "my-tofu-state-bucket"
+region = "eu-west-1"

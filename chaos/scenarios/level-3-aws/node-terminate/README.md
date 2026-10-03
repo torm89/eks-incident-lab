@@ -11,6 +11,7 @@ Like a spot interruption, but sudden. The cluster runs on one node until the rep
 ## Inject
 
 ```bash
+uv run scripts/lab.py state-backend   # only if you keep state in S3 (backend.hcl)
 cd chaos/scenarios/level-3-aws/node-terminate/infra && tofu init && tofu apply
 ```
 

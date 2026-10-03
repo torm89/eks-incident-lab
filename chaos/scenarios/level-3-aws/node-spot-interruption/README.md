@@ -11,6 +11,7 @@ Pods on that node go `Pending` and start on the other node. Single-replica servi
 ## Inject
 
 ```bash
+uv run scripts/lab.py state-backend   # only if you keep state in S3 (backend.hcl)
 cd chaos/scenarios/level-3-aws/node-spot-interruption/infra && tofu init && tofu apply
 ```
 

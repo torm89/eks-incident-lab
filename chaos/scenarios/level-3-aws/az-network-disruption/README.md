@@ -11,6 +11,7 @@ The node in that AZ becomes `NotReady`. Its pods are unreachable, but Kubernetes
 ## Inject
 
 ```bash
+uv run scripts/lab.py state-backend   # only if you keep state in S3 (backend.hcl)
 cd chaos/scenarios/level-3-aws/az-network-disruption/infra && tofu init && tofu apply
 ```
 

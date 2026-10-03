@@ -17,4 +17,5 @@ charts/
 
 # Local, account-specific settings
 backend.hcl
+backend_override.tf
 apps/ai-assistant/registry/
