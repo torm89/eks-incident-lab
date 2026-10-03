@@ -34,7 +34,11 @@ This repo is a sandbox for incident-response practice on EKS:
   - Helm hooks are not executed: disable chart features that depend on them.
 - Kubernetes apps live in `apps/<name>/` as Kustomize bases.
   - Third-party apps are referenced by a pinned release URL, never copied into the repo. Our changes go into `patches/`.
-- Grafana dashboards live in `platform/monitoring/dashboards/*.json`, generated as ConfigMaps labelled `grafana_dashboard: "1"`. `apps/` holds only the app and its patches.
+- Grafana dashboards are code: `scripts/generate_dashboards.py` writes `platform/monitoring/dashboards/*.json` (never edit the JSON or in the browser; change the script, run `uv run scripts/generate_dashboards.py`, commit both). They become ConfigMaps labelled `grafana_dashboard: "1"`. `apps/` holds only the app and its patches.
+  - Layout: golden signals (traffic, errors, latency, saturation) as stats in the top row, then RED per service, then USE/saturation.
+  - Percentiles from histograms, never averages; split latency by outcome; `$__rate_interval` in every `rate()`; a description and unit on every panel; thresholds on stats.
+  - Annotations mark chaos Jobs (`*-inject-*`, `*-recover-*`) and rollouts. Validate all queries with `promtool` after changes.
+- Metrics of our services: LLM calls follow the OpenTelemetry GenAI conventions (`gen_ai_client_operation_duration_seconds`, `gen_ai_client_token_usage`, labels `gen_ai_*`, `error_type` only on failure). Service-specific metrics use the `ai_assistant_` / `llm_gateway_` prefix.
 - Everything for failure injection lives in `chaos/`. Chaos tooling is optional and installed only when practicing.
   - `chaos/chaos-mesh/` - Chaos Mesh engine (same pattern as `platform/`: `crds/` first, then Helm via Kustomize).
   - `chaos/base/` - shared Job that calls the app's built-in `/chaos/*` API.

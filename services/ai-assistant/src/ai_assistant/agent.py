@@ -10,7 +10,13 @@ from typing import Any
 
 import anthropic
 
-from ai_assistant.metrics import LLM_CALL_DURATION, LLM_CALLS, LLM_COST, LLM_TOKENS
+from ai_assistant.metrics import (
+    GEN_AI_OPERATION_CHAT,
+    GEN_AI_SYSTEM_ANTHROPIC,
+    LLM_COST,
+    LLM_OPERATION_DURATION,
+    LLM_TOKEN_USAGE,
+)
 from ai_assistant.pricing import Pricing
 from ai_assistant.tools import TOOL_DEFINITIONS, ToolExecutor
 
@@ -69,6 +75,7 @@ class ShoppingAgent:
 
     def _call_llm(self, messages: list[dict[str, Any]]) -> anthropic.types.Message:
         started = time.perf_counter()
+        error_type = ""  # OpenTelemetry error.type: set only when the call failed.
         try:
             response = self._client.messages.create(
                 model=self._model,
@@ -78,25 +85,35 @@ class ShoppingAgent:
                 messages=messages,
             )
         except anthropic.APIStatusError as error:
-            LLM_CALLS.labels(outcome=str(error.status_code)).inc()
+            error_type = str(error.status_code)
             raise LlmUnavailableError(f"LLM returned HTTP {error.status_code}") from error
         except anthropic.APITimeoutError as error:
-            LLM_CALLS.labels(outcome="timeout").inc()
+            error_type = "timeout"
             raise LlmUnavailableError("LLM call timed out") from error
         except anthropic.APIConnectionError as error:
-            LLM_CALLS.labels(outcome="connection").inc()
+            error_type = "connection"
             raise LlmUnavailableError("Cannot reach the LLM") from error
         finally:
-            LLM_CALL_DURATION.observe(time.perf_counter() - started)
+            LLM_OPERATION_DURATION.labels(**self._gen_ai_labels(), error_type=error_type).observe(
+                time.perf_counter() - started
+            )
 
-        LLM_CALLS.labels(outcome="success").inc()
         self._record_usage(response.usage)
         return response
 
+    def _gen_ai_labels(self) -> dict[str, str]:
+        return {
+            "gen_ai_operation_name": GEN_AI_OPERATION_CHAT,
+            "gen_ai_system": GEN_AI_SYSTEM_ANTHROPIC,
+            "gen_ai_request_model": self._model,
+        }
+
     def _record_usage(self, usage: anthropic.types.Usage) -> None:
-        LLM_TOKENS.labels(direction="input").inc(usage.input_tokens)
-        LLM_TOKENS.labels(direction="output").inc(usage.output_tokens)
-        LLM_COST.inc(self._pricing.cost_usd(usage.input_tokens, usage.output_tokens))
+        LLM_TOKEN_USAGE.labels(**self._gen_ai_labels(), gen_ai_token_type="input").observe(usage.input_tokens)
+        LLM_TOKEN_USAGE.labels(**self._gen_ai_labels(), gen_ai_token_type="output").observe(usage.output_tokens)
+        LLM_COST.labels(gen_ai_request_model=self._model).inc(
+            self._pricing.cost_usd(usage.input_tokens, usage.output_tokens)
+        )
 
     def _run_tools(self, response: anthropic.types.Message) -> list[dict[str, Any]]:
         results = []

@@ -21,7 +21,7 @@ tofu output -raw start_experiment   # prints the start command: run it
 ## Observe
 
 - `kubectl get nodes -w` - when does the node become `NotReady`?
-- **5xx errors / s** and **Ready pods**.
+- **Errors**, **Pods ready** and **Node CPU and memory** (one node stops reporting).
 - Prometheus itself may run in that AZ: are there gaps in the graphs?
 
 ## Diagnose

@@ -17,8 +17,8 @@ kubectl create -k chaos/scenarios/level-1-application/ai-tool-cascade/inject
 ## Observe
 
 - **Tool calls / s by tool and outcome**: `error` appears.
-- **Chat requests / s by outcome**: still `success`!
-- **Retail Store** dashboard: the whole store is slow too.
+- **Questions / s by outcome**: still `success`!
+- **Tool latency p95 by tool** and the **Retail Store** dashboard: the whole store is slow too.
 - Ask the assistant yourself and read the answer.
 
 ## Diagnose

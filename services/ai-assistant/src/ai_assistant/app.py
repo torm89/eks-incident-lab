@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 from ai_assistant.agent import LlmUnavailableError, MaxStepsExceededError, ShoppingAgent
 from ai_assistant.catalog import CatalogClient
 from ai_assistant.config import GATEWAY_API_KEY_PLACEHOLDER, Settings
-from ai_assistant.metrics import AGENT_STEPS, CHAT_DURATION, CHAT_REQUESTS
+from ai_assistant.metrics import AGENT_STEPS, CHAT_DURATION, CHAT_REQUESTS, CHATS_IN_PROGRESS
 from ai_assistant.pricing import Pricing
 from ai_assistant.tools import ToolExecutor
 
@@ -33,19 +33,14 @@ def create_app(agent: ShoppingAgent) -> FastAPI:
 
     # Sync handler: FastAPI runs it in a worker thread, so blocking SDK calls are fine.
     @app.post("/chat", response_model=ChatResponse)
+    @CHATS_IN_PROGRESS.track_inprogress()
     def chat(request: ChatRequest):
         started = time.perf_counter()
-        try:
-            answer = agent.answer(request.message)
-        except LlmUnavailableError as error:
-            return _failure("llm_error", 503, str(error))
-        except MaxStepsExceededError as error:
-            return _failure("max_steps", 500, str(error))
-        finally:
-            CHAT_DURATION.observe(time.perf_counter() - started)
-        CHAT_REQUESTS.labels(outcome="success").inc()
-        AGENT_STEPS.observe(answer.steps)
-        return ChatResponse(answer=answer.text, steps=answer.steps)
+        outcome, response = _answer(agent, request.message)
+        CHAT_REQUESTS.labels(outcome=outcome).inc()
+        # Latency by outcome: fast failures must not hide slow successes.
+        CHAT_DURATION.labels(outcome=outcome).observe(time.perf_counter() - started)
+        return response
 
     @app.get("/healthz")
     def healthz() -> dict:
@@ -54,9 +49,15 @@ def create_app(agent: ShoppingAgent) -> FastAPI:
     return app
 
 
-def _failure(outcome: str, status_code: int, detail: str) -> JSONResponse:
-    CHAT_REQUESTS.labels(outcome=outcome).inc()
-    return JSONResponse(status_code=status_code, content={"error": detail})
+def _answer(agent: ShoppingAgent, question: str) -> tuple[str, ChatResponse | JSONResponse]:
+    try:
+        answer = agent.answer(question)
+    except LlmUnavailableError as error:
+        return "llm_error", JSONResponse(status_code=503, content={"error": str(error)})
+    except MaxStepsExceededError as error:
+        return "max_steps", JSONResponse(status_code=500, content={"error": str(error)})
+    AGENT_STEPS.observe(answer.steps)
+    return "success", ChatResponse(answer=answer.text, steps=answer.steps)
 
 
 def build_agent(settings: Settings) -> ShoppingAgent:

@@ -1,33 +1,150 @@
 {
   "uid": "ai-assistant",
   "title": "AI Assistant",
-  "description": "Chat traffic, LLM calls, tokens, cost and tool use of the AI shopping assistant.",
+  "description": "Golden signals, LLM calls (OpenTelemetry GenAI), tokens, cost, tools and gateway of the AI shopping assistant.",
   "tags": [
-    "ai-assistant",
-    "llm"
+    "eks-incident-lab"
   ],
   "timezone": "browser",
-  "refresh": "10s",
+  "refresh": "30s",
   "time": {
     "from": "now-30m",
     "to": "now"
   },
+  "graphTooltip": 1,
   "schemaVersion": 39,
   "editable": true,
+  "links": [
+    {
+      "title": "Lab dashboards",
+      "type": "dashboards",
+      "tags": [
+        "eks-incident-lab"
+      ],
+      "asDropdown": true,
+      "includeVars": false,
+      "keepTime": true
+    }
+  ],
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      },
+      {
+        "name": "Chaos injected",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "enable": true,
+        "iconColor": "red",
+        "expr": "max by (job_name) (kube_job_status_start_time{job_name=~\".*-inject-.*\"}) * 1000",
+        "titleFormat": "Chaos: {{job_name}}",
+        "step": "30s",
+        "useValueForTime": true
+      },
+      {
+        "name": "Chaos recovered",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "enable": true,
+        "iconColor": "green",
+        "expr": "max by (job_name) (kube_job_status_start_time{job_name=~\".*-recover-.*\"}) * 1000",
+        "titleFormat": "Recover: {{job_name}}",
+        "step": "30s",
+        "useValueForTime": true
+      },
+      {
+        "name": "Rollouts",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "enable": true,
+        "iconColor": "blue",
+        "expr": "changes(kube_deployment_status_observed_generation{namespace=\"ai-assistant\"}[1m]) > 0",
+        "titleFormat": "Rollout: {{deployment}}",
+        "step": "30s",
+        "useValueForTime": false
+      }
+    ]
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "datasource",
+        "label": "Data source",
+        "type": "datasource",
+        "query": "prometheus",
+        "current": {
+          "text": "Prometheus",
+          "value": "prometheus"
+        },
+        "hide": 0
+      },
+      {
+        "name": "model",
+        "label": "Model",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "query": {
+          "query": "label_values(gen_ai_client_operation_duration_seconds_count, gen_ai_request_model)",
+          "refId": "model"
+        },
+        "refresh": 2,
+        "sort": 1,
+        "current": {
+          "text": "All",
+          "value": "All"
+        },
+        "hide": 0,
+        "includeAll": true,
+        "allValue": ".*"
+      }
+    ]
+  },
   "panels": [
     {
       "id": 1,
-      "type": "stat",
-      "title": "Chat requests / s",
-      "description": "",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
+      "type": "row",
+      "title": "Golden signals: the assistant as customers see it",
+      "collapsed": false,
       "gridPos": {
         "x": 0,
         "y": 0,
-        "w": 6,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Traffic",
+      "description": "Chat questions per second.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 1,
+        "w": 5,
         "h": 4
       },
       "fieldConfig": {
@@ -44,60 +161,17 @@
           "fields": "",
           "values": false
         },
-        "colorMode": "value",
-        "graphMode": "area"
+        "colorMode": "background",
+        "graphMode": "area",
+        "textMode": "value"
       },
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
-          "expr": "sum(rate(ai_assistant_chat_requests_total[1m]))",
-          "legendFormat": "",
-          "refId": "A"
-        }
-      ]
-    },
-    {
-      "id": 2,
-      "type": "stat",
-      "title": "Chat error ratio",
-      "description": "",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "gridPos": {
-        "x": 6,
-        "y": 0,
-        "w": 6,
-        "h": 4
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "percentunit"
-        },
-        "overrides": []
-      },
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "colorMode": "value",
-        "graphMode": "area"
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "sum(rate(ai_assistant_chat_requests_total{outcome!=\"success\"}[1m])) / sum(rate(ai_assistant_chat_requests_total[1m]))",
+          "expr": "sum(rate(ai_assistant_chat_requests_total[$__rate_interval]))",
           "legendFormat": "",
           "refId": "A"
         }
@@ -106,21 +180,41 @@
     {
       "id": 3,
       "type": "stat",
-      "title": "LLM cost / hour",
-      "description": "Estimated from token usage and list prices. In mock mode: what the real API would cost.",
+      "title": "Errors",
+      "description": "Share of questions without an answer (LLM errors, step limit). Answers built on failed tools still count as success.",
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "${datasource}"
       },
       "gridPos": {
-        "x": 12,
-        "y": 0,
-        "w": 6,
+        "x": 5,
+        "y": 1,
+        "w": 5,
         "h": 4
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "currencyUSD"
+          "unit": "percentunit",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.01
+              },
+              {
+                "color": "red",
+                "value": 0.05
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
         },
         "overrides": []
       },
@@ -132,16 +226,17 @@
           "fields": "",
           "values": false
         },
-        "colorMode": "value",
-        "graphMode": "area"
+        "colorMode": "background",
+        "graphMode": "area",
+        "textMode": "value"
       },
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
-          "expr": "sum(rate(ai_assistant_llm_cost_usd_total[5m])) * 3600",
+          "expr": "sum(rate(ai_assistant_chat_requests_total{outcome!=\"success\"}[$__rate_interval])) / sum(rate(ai_assistant_chat_requests_total[$__rate_interval]))",
           "legendFormat": "",
           "refId": "A"
         }
@@ -150,21 +245,41 @@
     {
       "id": 4,
       "type": "stat",
-      "title": "LLM tokens / min",
-      "description": "",
+      "title": "Latency p95",
+      "description": "95% of answered questions are faster than this (all LLM and tool calls together).",
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "${datasource}"
       },
       "gridPos": {
-        "x": 18,
-        "y": 0,
-        "w": 6,
+        "x": 10,
+        "y": 1,
+        "w": 5,
         "h": 4
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "short"
+          "unit": "s",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 10
+              },
+              {
+                "color": "red",
+                "value": 30
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
         },
         "overrides": []
       },
@@ -176,16 +291,17 @@
           "fields": "",
           "values": false
         },
-        "colorMode": "value",
-        "graphMode": "area"
+        "colorMode": "background",
+        "graphMode": "area",
+        "textMode": "value"
       },
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
-          "expr": "sum(rate(ai_assistant_llm_tokens_total[1m])) * 60",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(ai_assistant_chat_duration_seconds_bucket{outcome=\"success\"}[$__rate_interval])))",
           "legendFormat": "",
           "refId": "A"
         }
@@ -193,61 +309,160 @@
     },
     {
       "id": 5,
-      "type": "timeseries",
-      "title": "Chat requests / s by outcome",
-      "description": "",
+      "type": "stat",
+      "title": "In progress",
+      "description": "Questions being answered right now. Growing means requests pile up (saturation).",
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "${datasource}"
       },
       "gridPos": {
-        "x": 0,
-        "y": 4,
-        "w": 12,
-        "h": 8
+        "x": 15,
+        "y": 1,
+        "w": 4,
+        "h": 4
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "reqps"
+          "unit": "none",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 5
+              },
+              {
+                "color": "red",
+                "value": 10
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
         },
         "overrides": []
       },
       "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
         },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
+        "colorMode": "background",
+        "graphMode": "area",
+        "textMode": "value"
       },
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
-          "expr": "sum by (outcome) (rate(ai_assistant_chat_requests_total[1m]))",
-          "legendFormat": "{{outcome}}",
+          "expr": "sum(ai_assistant_chat_requests_in_progress)",
+          "legendFormat": "",
           "refId": "A"
         }
       ]
     },
     {
       "id": 6,
-      "type": "timeseries",
-      "title": "LLM calls / s by outcome",
-      "description": "success, HTTP status code (429, 529, 5xx, 401), timeout or connection.",
+      "type": "stat",
+      "title": "LLM cost / hour",
+      "description": "Estimated from tokens and list prices. In mock mode: what the real API would cost.",
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "${datasource}"
       },
       "gridPos": {
-        "x": 12,
-        "y": 4,
-        "w": 12,
+        "x": 19,
+        "y": 1,
+        "w": 5,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 5
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "area",
+        "textMode": "value"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "sum(rate(ai_assistant_llm_cost_usd_total{gen_ai_request_model=~\"$model\"}[$__rate_interval])) * 3600",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "row",
+      "title": "Chat: rate, errors, duration",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 5,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Questions / s by outcome",
+      "description": "success, llm_error (no answer from the LLM) or max_steps (agent loop limit).",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 6,
+        "w": 6,
         "h": 8
       },
       "fieldConfig": {
@@ -271,27 +486,27 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
-          "expr": "sum by (outcome) (rate(ai_assistant_llm_calls_total[1m]))",
+          "expr": "sum by (outcome) (rate(ai_assistant_chat_requests_total[$__rate_interval]))",
           "legendFormat": "{{outcome}}",
           "refId": "A"
         }
       ]
     },
     {
-      "id": 7,
+      "id": 9,
       "type": "timeseries",
-      "title": "Latency (p95)",
-      "description": "",
+      "title": "Latency p95 by outcome",
+      "description": "Answered vs failed questions. A slow LLM shows up in both.",
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "${datasource}"
       },
       "gridPos": {
-        "x": 0,
-        "y": 12,
-        "w": 12,
+        "x": 6,
+        "y": 6,
+        "w": 6,
         "h": 8
       },
       "fieldConfig": {
@@ -315,107 +530,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(ai_assistant_chat_duration_seconds_bucket[5m])))",
-          "legendFormat": "chat request",
-          "refId": "A"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "histogram_quantile(0.95, sum by (le) (rate(ai_assistant_llm_call_duration_seconds_bucket[5m])))",
-          "legendFormat": "one LLM call",
-          "refId": "B"
-        }
-      ]
-    },
-    {
-      "id": 8,
-      "type": "timeseries",
-      "title": "Agent steps per answer (average)",
-      "description": "LLM calls per answered question. A rise means the agent loops more.",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "gridPos": {
-        "x": 12,
-        "y": 12,
-        "w": 12,
-        "h": 8
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short"
-        },
-        "overrides": []
-      },
-      "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "sum(rate(ai_assistant_agent_steps_sum[5m])) / sum(rate(ai_assistant_agent_steps_count[5m]))",
-          "legendFormat": "steps",
-          "refId": "A"
-        }
-      ]
-    },
-    {
-      "id": 9,
-      "type": "timeseries",
-      "title": "Tokens / min by direction",
-      "description": "",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "gridPos": {
-        "x": 0,
-        "y": 20,
-        "w": 12,
-        "h": 8
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short"
-        },
-        "overrides": []
-      },
-      "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "sum by (direction) (rate(ai_assistant_llm_tokens_total[1m])) * 60",
-          "legendFormat": "{{direction}}",
+          "expr": "histogram_quantile(0.95, sum by (outcome, le) (rate(ai_assistant_chat_duration_seconds_bucket{}[$__rate_interval])))",
+          "legendFormat": "{{outcome}}",
           "refId": "A"
         }
       ]
@@ -423,21 +541,21 @@
     {
       "id": 10,
       "type": "timeseries",
-      "title": "Tool calls / s by tool and outcome",
-      "description": "",
+      "title": "Agent steps per answer",
+      "description": "LLM calls needed per answered question. A rise means the agent loops more.",
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "${datasource}"
       },
       "gridPos": {
         "x": 12,
-        "y": 20,
-        "w": 12,
+        "y": 6,
+        "w": 6,
         "h": 8
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "reqps"
+          "unit": "short"
         },
         "overrides": []
       },
@@ -456,10 +574,10 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
-          "expr": "sum by (tool, outcome) (rate(ai_assistant_tool_calls_total[1m]))",
-          "legendFormat": "{{tool}} {{outcome}}",
+          "expr": "sum(rate(ai_assistant_agent_steps_sum[$__rate_interval])) / sum(rate(ai_assistant_agent_steps_count[$__rate_interval]))",
+          "legendFormat": "steps per answer",
           "refId": "A"
         }
       ]
@@ -467,21 +585,21 @@
     {
       "id": 11,
       "type": "timeseries",
-      "title": "LLM gateway: requests / s by status",
-      "description": "",
+      "title": "Cost per answer",
+      "description": "Dollars of LLM spend per answered question.",
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "${datasource}"
       },
       "gridPos": {
-        "x": 0,
-        "y": 28,
-        "w": 12,
+        "x": 18,
+        "y": 6,
+        "w": 6,
         "h": 8
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "reqps"
+          "unit": "currencyUSD"
         },
         "overrides": []
       },
@@ -500,26 +618,308 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
-          "expr": "sum by (mode, status) (rate(llm_gateway_requests_total[1m]))",
-          "legendFormat": "{{mode}} {{status}}",
+          "expr": "sum(rate(ai_assistant_llm_cost_usd_total{gen_ai_request_model=~\"$model\"}[$__rate_interval])) / sum(rate(ai_assistant_chat_requests_total{outcome=\"success\"}[$__rate_interval]))",
+          "legendFormat": "USD per answer",
           "refId": "A"
         }
       ]
     },
     {
       "id": 12,
+      "type": "row",
+      "title": "LLM calls (OpenTelemetry GenAI metrics)",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 14,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 13,
       "type": "timeseries",
-      "title": "LLM gateway: injected faults / s",
-      "description": "Requests hit by the gateway chaos API. In a real incident this panel does not exist.",
+      "title": "LLM calls / s by result",
+      "description": "One call can include SDK retries. error_type: HTTP status, timeout or connection.",
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 15,
+        "w": 8,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "label_replace(sum by (error_type) (rate(gen_ai_client_operation_duration_seconds_count{gen_ai_request_model=~\"$model\"}[$__rate_interval])), \"error_type\", \"success\", \"error_type\", \"\")",
+          "legendFormat": "{{error_type}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "type": "timeseries",
+      "title": "LLM latency (successful calls)",
+      "description": "p50, p95 and p99 of gen_ai.client.operation.duration.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 15,
+        "w": 8,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "histogram_quantile(0.5, sum by (le) (rate(gen_ai_client_operation_duration_seconds_bucket{gen_ai_request_model=~\"$model\", error_type=\"\"}[$__rate_interval])))",
+          "legendFormat": "p50",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(gen_ai_client_operation_duration_seconds_bucket{gen_ai_request_model=~\"$model\", error_type=\"\"}[$__rate_interval])))",
+          "legendFormat": "p95",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(gen_ai_client_operation_duration_seconds_bucket{gen_ai_request_model=~\"$model\", error_type=\"\"}[$__rate_interval])))",
+          "legendFormat": "p99",
+          "refId": "C"
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "type": "timeseries",
+      "title": "Retry amplification",
+      "description": "Requests the gateway receives per LLM call. 1 = no retries; 3 = every call retried twice.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 15,
+        "w": 8,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1.5
+              }
+            ]
+          },
+          "custom": {
+            "thresholdsStyle": {
+              "mode": "line+area"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "sum(rate(llm_gateway_requests_total[$__rate_interval])) / sum(rate(gen_ai_client_operation_duration_seconds_count[$__rate_interval]))",
+          "legendFormat": "gateway requests per LLM call",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "type": "timeseries",
+      "title": "Tokens / min by type",
+      "description": "gen_ai.client.token.usage: input (prompt, tools, history) and output tokens.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 23,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "sum by (gen_ai_token_type) (rate(gen_ai_client_token_usage_sum{gen_ai_request_model=~\"$model\"}[$__rate_interval])) * 60",
+          "legendFormat": "{{gen_ai_token_type}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "type": "timeseries",
+      "title": "Tokens per call p95 by type",
+      "description": "Large input means long history or big tool results: cost and latency grow with it.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
       },
       "gridPos": {
         "x": 12,
-        "y": 28,
+        "y": 23,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "histogram_quantile(0.95, sum by (gen_ai_token_type, le) (rate(gen_ai_client_token_usage_bucket{gen_ai_request_model=~\"$model\"}[$__rate_interval])))",
+          "legendFormat": "{{gen_ai_token_type}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "type": "row",
+      "title": "Tools",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 31,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 19,
+      "type": "timeseries",
+      "title": "Tool calls / s by tool and outcome",
+      "description": "error = the tool failed and Claude got an error result instead of data.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 32,
         "w": 12,
         "h": 8
       },
@@ -544,10 +944,384 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
-          "expr": "sum by (fault) (rate(llm_gateway_injected_faults_total[1m]))",
+          "expr": "sum by (tool, outcome) (rate(ai_assistant_tool_call_duration_seconds_count[$__rate_interval]))",
+          "legendFormat": "{{tool}} {{outcome}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 20,
+      "type": "timeseries",
+      "title": "Tool latency p95 by tool",
+      "description": "Slow tools make slow answers, even when the LLM is fast.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 32,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 5
+              }
+            ]
+          },
+          "custom": {
+            "thresholdsStyle": {
+              "mode": "line+area"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "histogram_quantile(0.95, sum by (tool, le) (rate(ai_assistant_tool_call_duration_seconds_bucket{}[$__rate_interval])))",
+          "legendFormat": "{{tool}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 21,
+      "type": "row",
+      "title": "LLM gateway",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 40,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 22,
+      "type": "timeseries",
+      "title": "Gateway requests / s by status",
+      "description": "Every attempt that reaches the gateway, including SDK retries.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 41,
+        "w": 8,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "sum by (mode, status) (rate(llm_gateway_requests_total[$__rate_interval]))",
+          "legendFormat": "{{mode}} {{status}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 23,
+      "type": "timeseries",
+      "title": "Gateway latency p95",
+      "description": "Time to answer one attempt, including injected latency.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 41,
+        "w": 8,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "histogram_quantile(0.95, sum by (mode, le) (rate(llm_gateway_request_duration_seconds_bucket{}[$__rate_interval])))",
+          "legendFormat": "{{mode}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 24,
+      "type": "timeseries",
+      "title": "Injected faults / s",
+      "description": "Requests hit by the gateway chaos API. In a real incident this panel does not exist.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 41,
+        "w": 8,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "sum by (fault) (rate(llm_gateway_injected_faults_total[$__rate_interval]))",
           "legendFormat": "{{fault}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 25,
+      "type": "row",
+      "title": "Saturation",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 49,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 26,
+      "type": "timeseries",
+      "title": "CPU by pod",
+      "description": "CPU cores used by each pod.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 50,
+        "w": 8,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=\"ai-assistant\", container!=\"\"}[$__rate_interval]))",
+          "legendFormat": "{{pod}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 27,
+      "type": "timeseries",
+      "title": "Memory, % of limit",
+      "description": "Working set memory as a share of the memory limit. At 100% the container is OOM-killed.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 50,
+        "w": 8,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.8
+              },
+              {
+                "color": "red",
+                "value": 0.95
+              }
+            ]
+          },
+          "custom": {
+            "thresholdsStyle": {
+              "mode": "line+area"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "sum by (pod) (container_memory_working_set_bytes{namespace=\"ai-assistant\", container!=\"\"}) / sum by (pod) (kube_pod_container_resource_limits{namespace=\"ai-assistant\", resource=\"memory\"})",
+          "legendFormat": "{{pod}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 28,
+      "type": "timeseries",
+      "title": "Container restarts (15 min)",
+      "description": "Restarts in the last 15 minutes: crashes, OOM kills or failed liveness probes.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 50,
+        "w": 8,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "sum by (pod) (increase(kube_pod_container_status_restarts_total{namespace=\"ai-assistant\"}[15m]))",
+          "legendFormat": "{{pod}}",
           "refId": "A"
         }
       ]

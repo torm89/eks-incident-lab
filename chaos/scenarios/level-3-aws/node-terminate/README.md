@@ -20,8 +20,8 @@ tofu output -raw start_experiment   # prints the start command: run it
 
 ## Observe
 
-- **Ready pods** drops sharply.
-- **CPU / Memory by pod** on the surviving node: is there room for everything?
+- **Pods ready** drops sharply.
+- **Node CPU and memory** and **Pods per node, % of max** on the surviving node: is there room for everything?
 - `kubectl get pods -A --field-selector=status.phase=Pending`
 
 ## Diagnose

@@ -1,11 +1,12 @@
 """Tools Claude can call, and their implementations on top of the catalog API."""
 
 import json
+import time
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any, Protocol
 
-from ai_assistant.metrics import TOOL_CALLS
+from ai_assistant.metrics import TOOL_CALL_DURATION
 
 DEFAULT_RESULT_LIMIT = 5
 
@@ -66,17 +67,20 @@ class ToolExecutor:
         }
 
     def run(self, tool_name: str, tool_input: dict[str, Any]) -> ToolResult:
+        started = time.perf_counter()
+        outcome, result = self._execute(tool_name, tool_input)
+        TOOL_CALL_DURATION.labels(tool=tool_name, outcome=outcome).observe(time.perf_counter() - started)
+        return result
+
+    def _execute(self, tool_name: str, tool_input: dict[str, Any]) -> tuple[str, ToolResult]:
         handler = self._handlers.get(tool_name)
         if handler is None:
-            TOOL_CALLS.labels(tool=tool_name, outcome="unknown_tool").inc()
-            return ToolResult(f"Unknown tool: {tool_name}", is_error=True)
+            return "unknown_tool", ToolResult(f"Unknown tool: {tool_name}", is_error=True)
         try:
             result = handler(tool_input)
         except Exception as error:  # Any failure is reported back to Claude, not raised.
-            TOOL_CALLS.labels(tool=tool_name, outcome="error").inc()
-            return ToolResult(f"Tool {tool_name} failed: {error}", is_error=True)
-        TOOL_CALLS.labels(tool=tool_name, outcome="success").inc()
-        return ToolResult(json.dumps(result), is_error=False)
+            return "error", ToolResult(f"Tool {tool_name} failed: {error}", is_error=True)
+        return "success", ToolResult(json.dumps(result), is_error=False)
 
     def _search_products(self, tool_input: dict[str, Any]) -> list[dict[str, Any]]:
         products = self._catalog.list_products(tool_input.get("tag"))

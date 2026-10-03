@@ -16,9 +16,9 @@ kubectl apply -k chaos/scenarios/level-2-kubernetes/checkout-redis-network-loss/
 
 ## Observe
 
-- **5xx errors / s** and **Average latency** for `ui`.
+- **Errors** and **UI latency: successful vs failed**.
 - **Orders / min** drops to 0.
-- **Ready pods**: does checkout fail its probes?
+- **Pods ready**: does checkout fail its probes?
 
 ## Diagnose
 

@@ -20,8 +20,8 @@ tofu output -raw start_experiment   # prints the start command: run it
 
 ## Observe
 
-- **Ready pods** drops, then recovers.
-- **5xx errors / s**: which services break, and for how long?
+- **Pods ready** drops, then recovers.
+- **Error ratio (5xx) by service**: which services break, and for how long?
 - `kubectl get nodes -w`
 
 ## Diagnose

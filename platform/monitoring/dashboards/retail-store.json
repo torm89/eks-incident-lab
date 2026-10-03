@@ -1,32 +1,148 @@
 {
   "uid": "retail-store",
   "title": "Retail Store",
-  "description": "Traffic, errors, latency and pod health of the Retail Store Sample App.",
+  "description": "Golden signals, RED per service, saturation and data stores of the Retail Store Sample App.",
   "tags": [
-    "retail-store"
+    "eks-incident-lab"
   ],
   "timezone": "browser",
-  "refresh": "10s",
+  "refresh": "30s",
   "time": {
     "from": "now-30m",
     "to": "now"
   },
+  "graphTooltip": 1,
   "schemaVersion": 39,
   "editable": true,
+  "links": [
+    {
+      "title": "Lab dashboards",
+      "type": "dashboards",
+      "tags": [
+        "eks-incident-lab"
+      ],
+      "asDropdown": true,
+      "includeVars": false,
+      "keepTime": true
+    }
+  ],
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      },
+      {
+        "name": "Chaos injected",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "enable": true,
+        "iconColor": "red",
+        "expr": "max by (job_name) (kube_job_status_start_time{job_name=~\".*-inject-.*\"}) * 1000",
+        "titleFormat": "Chaos: {{job_name}}",
+        "step": "30s",
+        "useValueForTime": true
+      },
+      {
+        "name": "Chaos recovered",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "enable": true,
+        "iconColor": "green",
+        "expr": "max by (job_name) (kube_job_status_start_time{job_name=~\".*-recover-.*\"}) * 1000",
+        "titleFormat": "Recover: {{job_name}}",
+        "step": "30s",
+        "useValueForTime": true
+      },
+      {
+        "name": "Rollouts",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "enable": true,
+        "iconColor": "blue",
+        "expr": "changes(kube_deployment_status_observed_generation{namespace=\"$namespace\"}[1m]) > 0",
+        "titleFormat": "Rollout: {{deployment}}",
+        "step": "30s",
+        "useValueForTime": false
+      }
+    ]
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "datasource",
+        "label": "Data source",
+        "type": "datasource",
+        "query": "prometheus",
+        "current": {
+          "text": "Prometheus",
+          "value": "prometheus"
+        },
+        "hide": 0
+      },
+      {
+        "name": "namespace",
+        "label": "Namespace",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "query": {
+          "query": "label_values(kube_pod_info, namespace)",
+          "refId": "namespace"
+        },
+        "refresh": 2,
+        "sort": 1,
+        "current": {
+          "text": "retail-store",
+          "value": "retail-store"
+        },
+        "hide": 0
+      }
+    ]
+  },
   "panels": [
     {
       "id": 1,
-      "type": "stat",
-      "title": "Requests / s (UI)",
-      "description": "Traffic entering the store through the UI.",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
+      "type": "row",
+      "title": "Golden signals: the store as customers see it (UI)",
+      "collapsed": false,
       "gridPos": {
         "x": 0,
         "y": 0,
-        "w": 6,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Traffic",
+      "description": "Requests per second entering the store through the UI.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 1,
+        "w": 5,
         "h": 4
       },
       "fieldConfig": {
@@ -43,60 +159,17 @@
           "fields": "",
           "values": false
         },
-        "colorMode": "value",
-        "graphMode": "area"
+        "colorMode": "background",
+        "graphMode": "area",
+        "textMode": "value"
       },
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
-          "expr": "sum(rate(http_server_requests_seconds_count{namespace=\"retail-store\", uri!~\"/actuator.*\", app_kubernetes_io_name=\"ui\"}[1m]))",
-          "legendFormat": "",
-          "refId": "A"
-        }
-      ]
-    },
-    {
-      "id": 2,
-      "type": "stat",
-      "title": "UI error ratio (5xx)",
-      "description": "",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "gridPos": {
-        "x": 6,
-        "y": 0,
-        "w": 6,
-        "h": 4
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "percentunit"
-        },
-        "overrides": []
-      },
-      "options": {
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "colorMode": "value",
-        "graphMode": "area"
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
-          },
-          "expr": "sum(rate(http_server_requests_seconds_count{namespace=\"retail-store\", uri!~\"/actuator.*\", app_kubernetes_io_name=\"ui\", status=~\"5..\"}[1m])) / sum(rate(http_server_requests_seconds_count{namespace=\"retail-store\", uri!~\"/actuator.*\", app_kubernetes_io_name=\"ui\"}[1m]))",
+          "expr": "sum(rate(http_server_requests_seconds_count{namespace=\"$namespace\", uri!~\"/actuator.*\", app_kubernetes_io_name=\"ui\"}[$__rate_interval]))",
           "legendFormat": "",
           "refId": "A"
         }
@@ -105,21 +178,41 @@
     {
       "id": 3,
       "type": "stat",
-      "title": "Orders / min",
-      "description": "Business metric from the orders service (as in the EKS Workshop).",
+      "title": "Errors",
+      "description": "Share of UI requests that end with a 5xx status.",
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "${datasource}"
       },
       "gridPos": {
-        "x": 12,
-        "y": 0,
-        "w": 6,
+        "x": 5,
+        "y": 1,
+        "w": 5,
         "h": 4
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "none"
+          "unit": "percentunit",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.01
+              },
+              {
+                "color": "red",
+                "value": 0.05
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
         },
         "overrides": []
       },
@@ -131,16 +224,17 @@
           "fields": "",
           "values": false
         },
-        "colorMode": "value",
-        "graphMode": "area"
+        "colorMode": "background",
+        "graphMode": "area",
+        "textMode": "value"
       },
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
-          "expr": "sum(rate(watch_orders_total{namespace=\"retail-store\", productId=\"*\"}[1m])) * 60",
+          "expr": "sum(rate(http_server_requests_seconds_count{namespace=\"$namespace\", uri!~\"/actuator.*\", app_kubernetes_io_name=\"ui\", status=~\"5..\"}[$__rate_interval])) / sum(rate(http_server_requests_seconds_count{namespace=\"$namespace\", uri!~\"/actuator.*\", app_kubernetes_io_name=\"ui\"}[$__rate_interval]))",
           "legendFormat": "",
           "refId": "A"
         }
@@ -149,21 +243,41 @@
     {
       "id": 4,
       "type": "stat",
-      "title": "Ready pods",
-      "description": "",
+      "title": "Latency p95",
+      "description": "95% of successful UI requests are faster than this.",
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "${datasource}"
       },
       "gridPos": {
-        "x": 18,
-        "y": 0,
-        "w": 6,
+        "x": 10,
+        "y": 1,
+        "w": 5,
         "h": 4
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "none"
+          "unit": "s",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.5
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
         },
         "overrides": []
       },
@@ -175,16 +289,17 @@
           "fields": "",
           "values": false
         },
-        "colorMode": "value",
-        "graphMode": "area"
+        "colorMode": "background",
+        "graphMode": "area",
+        "textMode": "value"
       },
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
-          "expr": "sum(kube_pod_status_ready{namespace=\"retail-store\", condition=\"true\"})",
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(http_server_requests_seconds_bucket{namespace=\"$namespace\", uri!~\"/actuator.*\", app_kubernetes_io_name=\"ui\", outcome=\"SUCCESS\"}[$__rate_interval])))",
           "legendFormat": "",
           "refId": "A"
         }
@@ -192,60 +307,155 @@
     },
     {
       "id": 5,
-      "type": "timeseries",
-      "title": "Requests / s by service",
-      "description": "",
+      "type": "stat",
+      "title": "Orders / min",
+      "description": "Business signal: orders placed per minute (orders service).",
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "${datasource}"
       },
       "gridPos": {
-        "x": 0,
-        "y": 4,
-        "w": 12,
-        "h": 8
+        "x": 15,
+        "y": 1,
+        "w": 5,
+        "h": 4
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "reqps"
+          "unit": "none",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 0.1
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
         },
         "overrides": []
       },
       "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
         },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
+        "colorMode": "background",
+        "graphMode": "area",
+        "textMode": "value"
       },
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
-          "expr": "sum by (app_kubernetes_io_name) (rate(http_server_requests_seconds_count{namespace=\"retail-store\", uri!~\"/actuator.*\"}[1m])) or sum by (app_kubernetes_io_name) (rate(gin_requests_total{namespace=\"retail-store\"}[1m]))",
-          "legendFormat": "{{app_kubernetes_io_name}}",
+          "expr": "sum(rate(watch_orders_total{namespace=\"$namespace\", productId=\"*\"}[$__rate_interval])) * 60",
+          "legendFormat": "",
           "refId": "A"
         }
       ]
     },
     {
       "id": 6,
-      "type": "timeseries",
-      "title": "5xx errors / s by service",
-      "description": "",
+      "type": "stat",
+      "title": "Pods ready",
+      "description": "Share of the store's pods (without chaos Jobs) that are ready.",
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "${datasource}"
       },
       "gridPos": {
-        "x": 12,
-        "y": 4,
+        "x": 20,
+        "y": 1,
+        "w": 4,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.75
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "area",
+        "textMode": "value"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "sum(kube_pod_status_ready{namespace=\"$namespace\", condition=\"true\"} * on (namespace, pod) group_left () kube_pod_info{namespace=\"$namespace\", created_by_kind!=\"Job\"}) / count(kube_pod_info{namespace=\"$namespace\", created_by_kind!=\"Job\"})",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "row",
+      "title": "Services: rate, errors, duration",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 5,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Requests / s by service",
+      "description": "Java services and catalog (Go). checkout exposes no HTTP metrics.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 6,
         "w": 12,
         "h": 8
       },
@@ -270,26 +480,177 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
-          "expr": "sum by (app_kubernetes_io_name) (rate(http_server_requests_seconds_count{namespace=\"retail-store\", uri!~\"/actuator.*\", status=~\"5..\"}[1m])) or sum by (app_kubernetes_io_name) (rate(gin_requests_total{namespace=\"retail-store\", code=~\"5..\"}[1m]))",
+          "expr": "sum by (app_kubernetes_io_name) (rate(http_server_requests_seconds_count{namespace=\"$namespace\", uri!~\"/actuator.*\"}[$__rate_interval]))",
           "legendFormat": "{{app_kubernetes_io_name}}",
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "sum by (app_kubernetes_io_name) (rate(gin_requests_total{namespace=\"$namespace\", url!~\"/health.*|/metrics.*\"}[$__rate_interval]))",
+          "legendFormat": "{{app_kubernetes_io_name}}",
+          "refId": "B"
         }
       ]
     },
     {
-      "id": 7,
+      "id": 9,
       "type": "timeseries",
-      "title": "Average latency by service",
-      "description": "",
+      "title": "Error ratio (5xx) by service",
+      "description": "Share of requests that fail, per service. Line: 5%.",
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 6,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 0.05
+              }
+            ]
+          },
+          "custom": {
+            "thresholdsStyle": {
+              "mode": "line+area"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "sum by (app_kubernetes_io_name) (rate(http_server_requests_seconds_count{namespace=\"$namespace\", uri!~\"/actuator.*\", status=~\"5..\"}[$__rate_interval])) / sum by (app_kubernetes_io_name) (rate(http_server_requests_seconds_count{namespace=\"$namespace\", uri!~\"/actuator.*\"}[$__rate_interval]))",
+          "legendFormat": "{{app_kubernetes_io_name}}",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "sum by (app_kubernetes_io_name) (rate(gin_requests_total{namespace=\"$namespace\", url!~\"/health.*|/metrics.*\", code=~\"5..\"}[$__rate_interval])) / sum by (app_kubernetes_io_name) (rate(gin_requests_total{namespace=\"$namespace\", url!~\"/health.*|/metrics.*\"}[$__rate_interval]))",
+          "legendFormat": "{{app_kubernetes_io_name}}",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "Latency p95 by service",
+      "description": "95th percentile per service. Catalog is often the root cause of a slow UI.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
       },
       "gridPos": {
         "x": 0,
-        "y": 12,
+        "y": 14,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "custom": {
+            "thresholdsStyle": {
+              "mode": "line+area"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "histogram_quantile(0.95, sum by (app_kubernetes_io_name, le) (rate(http_server_requests_seconds_bucket{namespace=\"$namespace\", uri!~\"/actuator.*\"}[$__rate_interval])))",
+          "legendFormat": "{{app_kubernetes_io_name}}",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "histogram_quantile(0.95, sum by (app_kubernetes_io_name, le) (rate(gin_request_duration_seconds_bucket{namespace=\"$namespace\", url!~\"/health.*|/metrics.*\"}[$__rate_interval])))",
+          "legendFormat": "{{app_kubernetes_io_name}}",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "UI latency: successful vs failed",
+      "description": "p50, p95 and p99 by outcome. Fast failures must not hide slow successes.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 14,
         "w": 12,
         "h": 8
       },
@@ -314,71 +675,58 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
-          "expr": "sum by (app_kubernetes_io_name) (rate(http_server_requests_seconds_sum{namespace=\"retail-store\", uri!~\"/actuator.*\"}[1m])) / sum by (app_kubernetes_io_name) (rate(http_server_requests_seconds_count{namespace=\"retail-store\", uri!~\"/actuator.*\"}[1m]))",
-          "legendFormat": "{{app_kubernetes_io_name}}",
+          "expr": "histogram_quantile(0.5, sum by (outcome, le) (rate(http_server_requests_seconds_bucket{namespace=\"$namespace\", uri!~\"/actuator.*\", app_kubernetes_io_name=\"ui\"}[$__rate_interval])))",
+          "legendFormat": "p50 {{outcome}}",
           "refId": "A"
-        }
-      ]
-    },
-    {
-      "id": 8,
-      "type": "timeseries",
-      "title": "Container restarts (15 min)",
-      "description": "",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "gridPos": {
-        "x": 12,
-        "y": 12,
-        "w": 12,
-        "h": 8
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "none"
         },
-        "overrides": []
-      },
-      "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {
-          "mode": "multi",
-          "sort": "desc"
-        }
-      },
-      "targets": [
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
-          "expr": "sum by (pod) (increase(kube_pod_container_status_restarts_total{namespace=\"retail-store\"}[15m]))",
-          "legendFormat": "{{pod}}",
-          "refId": "A"
+          "expr": "histogram_quantile(0.95, sum by (outcome, le) (rate(http_server_requests_seconds_bucket{namespace=\"$namespace\", uri!~\"/actuator.*\", app_kubernetes_io_name=\"ui\"}[$__rate_interval])))",
+          "legendFormat": "p95 {{outcome}}",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "histogram_quantile(0.99, sum by (outcome, le) (rate(http_server_requests_seconds_bucket{namespace=\"$namespace\", uri!~\"/actuator.*\", app_kubernetes_io_name=\"ui\"}[$__rate_interval])))",
+          "legendFormat": "p99 {{outcome}}",
+          "refId": "C"
         }
       ]
     },
     {
-      "id": 9,
+      "id": 12,
+      "type": "row",
+      "title": "Saturation: pods and nodes",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 22,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 13,
       "type": "timeseries",
       "title": "CPU by pod",
-      "description": "",
+      "description": "CPU cores used by each pod.",
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "${datasource}"
       },
       "gridPos": {
         "x": 0,
-        "y": 20,
-        "w": 12,
+        "y": 23,
+        "w": 8,
         "h": 8
       },
       "fieldConfig": {
@@ -402,32 +750,54 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
-          "expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=\"retail-store\", container!=\"\"}[1m]))",
+          "expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=\"$namespace\", container!=\"\"}[$__rate_interval]))",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
       ]
     },
     {
-      "id": 10,
+      "id": 14,
       "type": "timeseries",
-      "title": "Memory by pod",
-      "description": "",
+      "title": "Memory, % of limit",
+      "description": "Working set memory as a share of the memory limit. At 100% the container is OOM-killed.",
       "datasource": {
         "type": "prometheus",
-        "uid": "prometheus"
+        "uid": "${datasource}"
       },
       "gridPos": {
-        "x": 12,
-        "y": 20,
-        "w": 12,
+        "x": 8,
+        "y": 23,
+        "w": 8,
         "h": 8
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "bytes"
+          "unit": "percentunit",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.8
+              },
+              {
+                "color": "red",
+                "value": 0.95
+              }
+            ]
+          },
+          "custom": {
+            "thresholdsStyle": {
+              "mode": "line+area"
+            }
+          }
         },
         "overrides": []
       },
@@ -446,9 +816,320 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "prometheus"
+            "uid": "${datasource}"
           },
-          "expr": "sum by (pod) (container_memory_working_set_bytes{namespace=\"retail-store\", container!=\"\"})",
+          "expr": "sum by (pod) (container_memory_working_set_bytes{namespace=\"$namespace\", container!=\"\"}) / sum by (pod) (kube_pod_container_resource_limits{namespace=\"$namespace\", resource=\"memory\"})",
+          "legendFormat": "{{pod}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "type": "timeseries",
+      "title": "Container restarts (15 min)",
+      "description": "Restarts in the last 15 minutes: crashes, OOM kills or failed liveness probes.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 23,
+        "w": 8,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "sum by (pod) (increase(kube_pod_container_status_restarts_total{namespace=\"$namespace\"}[15m]))",
+          "legendFormat": "{{pod}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "type": "timeseries",
+      "title": "CPU throttling",
+      "description": "Share of CPU periods in which a container hit its CPU limit and had to wait.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 31,
+        "w": 8,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 0.25
+              }
+            ]
+          },
+          "custom": {
+            "thresholdsStyle": {
+              "mode": "line+area"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "sum by (pod) (rate(container_cpu_cfs_throttled_periods_total{namespace=\"$namespace\", container!=\"\"}[$__rate_interval])) / sum by (pod) (rate(container_cpu_cfs_periods_total{namespace=\"$namespace\", container!=\"\"}[$__rate_interval]))",
+          "legendFormat": "{{pod}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "type": "timeseries",
+      "title": "Node CPU and memory",
+      "description": "Utilization of each worker node. Losing one node puts all load on the other.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 31,
+        "w": 8,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 0.9
+              }
+            ]
+          },
+          "custom": {
+            "thresholdsStyle": {
+              "mode": "line+area"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "1 - avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\"}[$__rate_interval]))",
+          "legendFormat": "CPU {{instance}}",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes",
+          "legendFormat": "memory {{instance}}",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "type": "timeseries",
+      "title": "Pods per node, % of max",
+      "description": "Running pods vs the node's pod limit (17 on t3.medium). A full node cannot take moved pods.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 31,
+        "w": 8,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 0.9
+              }
+            ]
+          },
+          "custom": {
+            "thresholdsStyle": {
+              "mode": "line+area"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "count by (node) (kube_pod_info{node!=\"\"}) / sum by (node) (kube_node_status_allocatable{resource=\"pods\"})",
+          "legendFormat": "{{node}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 19,
+      "type": "row",
+      "title": "Dependencies: data stores",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 39,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 20,
+      "type": "state-timeline",
+      "title": "Data store pods",
+      "description": "Readiness history of MySQL, PostgreSQL, Redis, RabbitMQ and DynamoDB Local.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 40,
+        "w": 24,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "Not ready",
+                  "color": "red"
+                },
+                "1": {
+                  "text": "Ready",
+                  "color": "green"
+                }
+              }
+            }
+          ],
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showValue": "never",
+        "mergeValues": true,
+        "rowHeight": 0.8,
+        "legend": {
+          "showLegend": false
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "max by (pod) (kube_pod_status_ready{namespace=\"$namespace\", condition=\"true\", pod=~\".*(mysql|postgresql|redis|rabbitmq|dynamodb).*\"})",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }

@@ -16,13 +16,13 @@ kubectl create -k chaos/scenarios/level-1-application/llm-slow/inject
 
 ## Observe
 
-- **Latency (p95)**: `one LLM call` and `chat request` jump.
-- **Chat requests / s** by outcome: still `success`?
+- **LLM latency (successful calls)** and **Latency p95 by outcome** jump.
+- **Questions / s by outcome**: still `success`?
 - `kubectl -n traffic logs deploy/ai-load-generator` - response times.
 
 ## Diagnose
 
-- Is it the LLM or a tool? Compare `one LLM call` latency with `chat request` latency.
+- Is it the LLM or a tool? Compare **LLM latency** with **Tool latency p95 by tool**.
 - How many LLM calls per answer? (**Agent steps per answer**)
 - What happens if the delay is longer than the SDK timeout (30 s)? Try `/chaos/latency/35000`.
 

@@ -12,3 +12,4 @@ resources:
 
 patches:
   - path: patches/ui-service-cluster-ip.yaml
+  - path: patches/latency-histograms.yaml

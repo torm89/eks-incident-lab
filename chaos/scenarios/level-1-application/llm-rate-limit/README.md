@@ -16,9 +16,9 @@ kubectl create -k chaos/scenarios/level-1-application/llm-rate-limit/inject
 
 ## Observe
 
-- **AI Assistant** dashboard: **LLM calls / s by outcome** shows `429`.
-- **Chat error ratio** goes to 100%.
-- Compare **LLM gateway: requests / s** with **LLM calls / s**: where does the difference come from?
+- **AI Assistant** dashboard: **LLM calls / s by result** shows `429`.
+- Golden signal **Errors** goes to 100%.
+- **Retry amplification** rises above 1: the gateway gets more requests than the assistant makes LLM calls. Where does the difference come from?
 
 ## Diagnose
 

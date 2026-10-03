@@ -16,9 +16,9 @@ kubectl create -k chaos/scenarios/level-1-application/orders-http-500/inject
 
 ## Observe
 
-- **5xx errors / s by service**: `orders`, then `ui`.
+- **Error ratio (5xx) by service**: `orders`, then `ui`.
 - **Orders / min** drops to 0.
-- **UI error ratio** rises, but not to 100%.
+- Golden signal **Errors** rises, but not to 100%.
 
 ## Diagnose
 

@@ -1,6 +1,6 @@
 [project]
 name = "ai-assistant"
-version = "0.1.0"
+version = "0.2.0"
 description = "Shopping assistant for the Retail Store: Claude with tools that query the catalog."
 requires-python = ">=3.12"
 dependencies = [

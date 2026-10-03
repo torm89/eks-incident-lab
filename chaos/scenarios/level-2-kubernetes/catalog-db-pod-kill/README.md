@@ -16,9 +16,9 @@ kubectl apply -k chaos/scenarios/level-2-kubernetes/catalog-db-pod-kill/inject
 
 ## Observe
 
-- **Ready pods** dips briefly.
-- **5xx errors / s**: `ui`. Does it go back to zero by itself?
-- **Container restarts** for `catalog-mysql-0`.
+- **Pods ready** dips briefly; **Data store pods** shows `catalog-mysql-0` not ready.
+- **Error ratio (5xx) by service**: `ui` and `catalog`. Does it go back to zero by itself?
+- **Container restarts (15 min)** for the catalog pods.
 
 ## Diagnose
 
