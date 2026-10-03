@@ -219,6 +219,7 @@ Switch modes while the cluster is **destroyed**. On a running cluster OpenTofu r
 | [`services/`](services/) | Python source of our own services, with tests and Dockerfiles |
 | [`traffic/`](traffic/) | [Artillery](https://www.artillery.io/) load generators for the store and the assistant |
 | [`docs/runbooks/`](docs/runbooks/alerts.md) | What to do when an alert fires |
+| [`docs/backlog.md`](docs/backlog.md) | Ideas not built yet: new scenarios, observability, CI |
 | [`chaos/`](chaos/) | Chaos Mesh engine, shared chaos Job, scenarios grouped by level, AWS FIS templates |
 | [`scripts/`](scripts/) | `lab.py` (`up` / `down` for the whole lab), `chaos.py` (inject / recover / random blind scenarios), `push_images.py` (service images to ECR), `generate_dashboards.py`, `generate_alerts.py` + `test_alerts.py` (SLOs in `slo_definitions.py`) |
 
