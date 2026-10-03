@@ -7,7 +7,7 @@ Break a microservices store and an AI shopping assistant on purpose, then detect
 ![OpenTofu](https://img.shields.io/badge/OpenTofu-%E2%89%A51.10-FFDA18?logo=opentofu&logoColor=black)
 ![Chaos scenarios](https://img.shields.io/badge/chaos_scenarios-10-red)
 ![Claude](https://img.shields.io/badge/AI-Claude_Haiku_4.5-D97757?logo=anthropic&logoColor=white)
-![Cost](https://img.shields.io/badge/cost-~%240.20%2Fsession-brightgreen)
+![Cost](https://img.shields.io/badge/cost-~%240.20%2Fhour-brightgreen)
 ![License: MIT](https://img.shields.io/badge/license-MIT-blue)
 ![Built with Claude Code](https://img.shields.io/badge/built_with-Claude_Code-D97757?logo=anthropic&logoColor=white)
 
@@ -16,7 +16,7 @@ Break a microservices store and an AI shopping assistant on purpose, then detect
 - **Real exercises, not demos.** Every scenario has a hypothesis, signals to watch, a runbook and a hidden solution. You find the cause yourself.
 - **AI failures, not only classic ones.** Rate-limited LLM APIs, slow models, and silent failures where the assistant answers with HTTP 200 but the answer is useless.
 - **Three layers of chaos.** Application (built-in chaos APIs), Kubernetes ([Chaos Mesh](https://chaos-mesh.org/)) and AWS ([Fault Injection Service](https://aws.amazon.com/fis/)).
-- **Cheap and disposable.** Spot nodes, no NAT gateway by default, everything removed with one `tofu destroy`. About $0.20 per practice session.
+- **Cheap and disposable.** Spot nodes, no NAT gateway by default, everything removed with one `tofu destroy`. About $0.20 per hour, ~$0.35 for a typical session.
 
 ## How it works
 
@@ -146,8 +146,10 @@ Then pick a scenario from the table above.
 |---|---|---|
 | EKS control plane | $0.10 / hour | $0.10 / hour |
 | 2 × `t3.medium` spot nodes | ~$0.03 / hour | ~$0.03 / hour |
-| NAT gateway (hours + image downloads) | none | ~$0.05 / hour + ~$0.05 / GB |
-| **Typical 1-hour session** | **~$0.20** | **~$0.50** |
+| Traffic between AZs, control plane logs, public IPs, EBS | ~$0.07 / hour | ~$0.06 / hour |
+| NAT gateway | none | ~$0.05 / hour + ~$0.05 / GB (~5 GB of images per session) |
+| **Total per hour** | **~$0.20** | **~$0.25 + image downloads** |
+| **Typical session** (setup + 1 hour of practice + teardown, ~1.7 hours) | **~$0.35** | **~$0.70** |
 | AI assistant | free (mock LLM) | free (mock LLM) |
 | AI assistant with the real Anthropic API | ~$1-2 / hour (Claude Haiku 4.5) | same |
 | AWS FIS experiment | ~$0.10 per action-minute | same |
