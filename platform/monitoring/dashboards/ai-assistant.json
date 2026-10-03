@@ -67,15 +67,15 @@
         "useValueForTime": true
       },
       {
-        "name": "Alerts firing",
+        "name": "Pages",
         "datasource": {
           "type": "prometheus",
           "uid": "${datasource}"
         },
         "enable": true,
         "iconColor": "orange",
-        "expr": "ALERTS{alertstate=\"firing\", service=\"ai-assistant\"} or ALERTS{alertstate=\"firing\", namespace=\"ai-assistant\"}",
-        "titleFormat": "{{alertname}} ({{severity}})",
+        "expr": "ALERTS{alertstate=\"firing\", severity=\"critical\", service=\"ai-assistant\"} or ALERTS{alertstate=\"firing\", severity=\"critical\", namespace=\"ai-assistant\"}",
+        "titleFormat": "{{alertname}}",
         "step": "30s",
         "useValueForTime": false
       },
@@ -87,10 +87,10 @@
         },
         "enable": true,
         "iconColor": "blue",
-        "expr": "changes(kube_deployment_status_observed_generation{namespace=\"ai-assistant\"}[1m]) > 0",
-        "titleFormat": "Rollout: {{deployment}}",
+        "expr": "max by (replicaset) (kube_replicaset_created{namespace=\"ai-assistant\"}) * 1000",
+        "titleFormat": "Rollout: {{replicaset}}",
         "step": "30s",
-        "useValueForTime": false
+        "useValueForTime": true
       }
     ]
   },
@@ -402,27 +402,7 @@
       },
       "fieldConfig": {
         "defaults": {
-          "unit": "currencyUSD",
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 1
-              },
-              {
-                "color": "red",
-                "value": 5
-              }
-            ]
-          },
-          "color": {
-            "mode": "thresholds"
-          }
+          "unit": "currencyUSD"
         },
         "overrides": []
       },

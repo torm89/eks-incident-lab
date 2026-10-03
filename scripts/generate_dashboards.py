@@ -166,18 +166,22 @@ def annotations(namespace: str, service: str) -> list[dict[str, Any]]:
     return [
         builtin,
         # Off by default: a real incident has no "chaos injected" marker. Practice blind, then switch
-        # them on for the review to measure time to detect (inject -> "Alerts firing").
+        # them on for the review to measure time to detect (inject -> "Pages"). Blind chaos.py runs leave no data for them.
         prometheus_annotation("Chaos injected", job_start.format(step="inject"), "Chaos: {{job_name}}", "red", True, enabled=False),
         prometheus_annotation("Chaos recovered", job_start.format(step="recover"), "Recover: {{job_name}}", "green", True, enabled=False),
+        # Pages only: one incident fires several alerts (page, ticket, causes); bands for all of them clutter every graph.
+        # Warnings stay visible in Alertmanager.
         prometheus_annotation(
-            "Alerts firing",
-            f'ALERTS{{alertstate="firing", service="{service}"}} or ALERTS{{alertstate="firing", namespace="{namespace}"}}',
-            "{{alertname}} ({{severity}})", "orange", False,
+            "Pages",
+            f'ALERTS{{alertstate="firing", severity="critical", service="{service}"}} '
+            f'or ALERTS{{alertstate="firing", severity="critical", namespace="{namespace}"}}',
+            "{{alertname}}", "orange", False,
         ),
+        # One marker per rollout: the creation time of each new ReplicaSet.
         prometheus_annotation(
             "Rollouts",
-            f'changes(kube_deployment_status_observed_generation{{namespace="{namespace}"}}[1m]) > 0',
-            "Rollout: {{deployment}}", "blue", False,
+            f'max by (replicaset) (kube_replicaset_created{{namespace="{namespace}"}}) * 1000',
+            "Rollout: {{replicaset}}", "blue", True,
         ),
     ]
 
@@ -352,9 +356,9 @@ def ai_assistant() -> dict[str, Any]:
              "s", [("green", None), ("yellow", 10), ("red", 30)], width=5),
         stat("In progress", "Questions being answered right now. Growing means requests pile up (saturation).",
              "sum(ai_assistant_chat_requests_in_progress)", "none", [("green", None), ("yellow", 5), ("red", 10)], width=4),
+        # No traffic-light colors: in mock mode this is only an estimate. Real overspend is the LlmCostBudgetExceeded alert.
         stat("LLM cost / hour", "Estimated from tokens and list prices. In mock mode: what the real API would cost.",
-             f"sum(rate(ai_assistant_llm_cost_usd_total{{{model}}}{RATE})) * 3600", "currencyUSD",
-             [("green", None), ("yellow", 1), ("red", 5)], width=5),
+             f"sum(rate(ai_assistant_llm_cost_usd_total{{{model}}}{RATE})) * 3600", "currencyUSD", width=5),
     ])
 
     chat_row = Row("Chat: rate, errors, duration", [

@@ -67,15 +67,15 @@
         "useValueForTime": true
       },
       {
-        "name": "Alerts firing",
+        "name": "Pages",
         "datasource": {
           "type": "prometheus",
           "uid": "${datasource}"
         },
         "enable": true,
         "iconColor": "orange",
-        "expr": "ALERTS{alertstate=\"firing\", service=\"retail-store\"} or ALERTS{alertstate=\"firing\", namespace=\"$namespace\"}",
-        "titleFormat": "{{alertname}} ({{severity}})",
+        "expr": "ALERTS{alertstate=\"firing\", severity=\"critical\", service=\"retail-store\"} or ALERTS{alertstate=\"firing\", severity=\"critical\", namespace=\"$namespace\"}",
+        "titleFormat": "{{alertname}}",
         "step": "30s",
         "useValueForTime": false
       },
@@ -87,10 +87,10 @@
         },
         "enable": true,
         "iconColor": "blue",
-        "expr": "changes(kube_deployment_status_observed_generation{namespace=\"$namespace\"}[1m]) > 0",
-        "titleFormat": "Rollout: {{deployment}}",
+        "expr": "max by (replicaset) (kube_replicaset_created{namespace=\"$namespace\"}) * 1000",
+        "titleFormat": "Rollout: {{replicaset}}",
         "step": "30s",
-        "useValueForTime": false
+        "useValueForTime": true
       }
     ]
   },

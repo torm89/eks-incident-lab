@@ -10,9 +10,10 @@ Failure injection for the Retail Store app. Each scenario is a small incident ex
 
 Every scenario README has a hidden **Solution** section. Try first, then open it.
 
-Practice **blind**: the dashboards show an orange **Alerts firing** marker, but the red **Chaos injected** and green
-**Chaos recovered** markers are **off by default** (a real incident has no such marker). After the exercise, switch them on
-at the top of the dashboard to measure your **time to detect** (red marker → orange marker) for the review.
+Practice **blind**: the dashboards show an orange **Pages** marker (critical alerts) and blue **Rollouts** markers, but no hint
+when the failure started: the **Chaos injected** / **Chaos recovered** markers are off by default, and `chaos.py inject --random`
+leaves no data for them at all. Measure your **time to detect** with `uv run scripts/chaos.py reveal` (injection time)
+and the first orange marker.
 Expected alerts per scenario:
 
 | Scenario | Expected alerts |
