@@ -10,7 +10,9 @@ Failure injection for the Retail Store app. Each scenario is a small incident ex
 
 Every scenario README has a hidden **Solution** section. Try first, then open it.
 
-Measure your **time to detect**: the dashboards show a red **Chaos injected** marker and an orange **Alerts firing** marker.
+Practice **blind**: the dashboards show an orange **Alerts firing** marker, but the red **Chaos injected** and green
+**Chaos recovered** markers are **off by default** (a real incident has no such marker). After the exercise, switch them on
+at the top of the dashboard to measure your **time to detect** (red marker → orange marker) for the review.
 Expected alerts per scenario:
 
 | Scenario | Expected alerts |

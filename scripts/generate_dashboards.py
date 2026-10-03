@@ -10,7 +10,8 @@ Design follows common practice:
 - Every panel has a description and a unit; stats and key graphs have thresholds.
 - $__rate_interval in every rate(), a datasource variable, shared crosshair, links between the lab dashboards.
 - An SLO row: error budget left in the session and burn rate, the same SLOs as the alerts (slo_definitions.py).
-- Annotations mark chaos injections, recoveries, firing alerts and rollouts, so cause, detection and effect line up in time.
+- Annotations mark firing alerts and rollouts. Chaos injection/recovery markers exist but are off by default
+  (realistic practice); switch them on for the review.
 """
 
 import json
@@ -148,8 +149,9 @@ def query_variable(name: str, label: str, query: str, default: str, include_all:
 
 
 def annotations(namespace: str, service: str) -> list[dict[str, Any]]:
-    def prometheus_annotation(name: str, expr: str, title: str, color: str, use_value_for_time: bool) -> dict[str, Any]:
-        return {"name": name, "datasource": DATASOURCE, "enable": True, "iconColor": color, "expr": expr,
+    def prometheus_annotation(name: str, expr: str, title: str, color: str, use_value_for_time: bool,
+                              enabled: bool = True) -> dict[str, Any]:
+        return {"name": name, "datasource": DATASOURCE, "enable": enabled, "iconColor": color, "expr": expr,
                 "titleFormat": title, "step": "30s", "useValueForTime": use_value_for_time}
 
     builtin = {"builtIn": 1, "datasource": {"type": "grafana", "uid": "-- Grafana --"}, "enable": True,
@@ -158,8 +160,10 @@ def annotations(namespace: str, service: str) -> list[dict[str, Any]]:
     job_start = 'max by (job_name) (kube_job_status_start_time{{job_name=~".*-{step}-.*"}}) * 1000'
     return [
         builtin,
-        prometheus_annotation("Chaos injected", job_start.format(step="inject"), "Chaos: {{job_name}}", "red", True),
-        prometheus_annotation("Chaos recovered", job_start.format(step="recover"), "Recover: {{job_name}}", "green", True),
+        # Off by default: a real incident has no "chaos injected" marker. Practice blind, then switch
+        # them on for the review to measure time to detect (inject -> "Alerts firing").
+        prometheus_annotation("Chaos injected", job_start.format(step="inject"), "Chaos: {{job_name}}", "red", True, enabled=False),
+        prometheus_annotation("Chaos recovered", job_start.format(step="recover"), "Recover: {{job_name}}", "green", True, enabled=False),
         prometheus_annotation(
             "Alerts firing",
             f'ALERTS{{alertstate="firing", service="{service}"}} or ALERTS{{alertstate="firing", namespace="{namespace}"}}',

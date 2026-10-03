@@ -46,7 +46,7 @@
           "type": "prometheus",
           "uid": "${datasource}"
         },
-        "enable": true,
+        "enable": false,
         "iconColor": "red",
         "expr": "max by (job_name) (kube_job_status_start_time{job_name=~\".*-inject-.*\"}) * 1000",
         "titleFormat": "Chaos: {{job_name}}",
@@ -59,7 +59,7 @@
           "type": "prometheus",
           "uid": "${datasource}"
         },
-        "enable": true,
+        "enable": false,
         "iconColor": "green",
         "expr": "max by (job_name) (kube_job_status_start_time{job_name=~\".*-recover-.*\"}) * 1000",
         "titleFormat": "Recover: {{job_name}}",
