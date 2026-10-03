@@ -83,6 +83,12 @@ uv sync
 uv run pytest
 ```
 
+Check that the images still build, without AWS (no login, no push):
+
+```bash
+uv run scripts/push_images.py --build-only
+```
+
 After a change: bump `version` in the service's `pyproject.toml`, then run `uv run scripts/push_images.py`.
 The script pushes the new tag and regenerates `apps/ai-assistant/registry/` (git-ignored image references
 for your AWS account). Apply `apps/ai-assistant/base` again to roll it out.

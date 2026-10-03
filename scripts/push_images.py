@@ -4,11 +4,16 @@ Run from the repository root after `tofu apply` in infra/, with AWS_PROFILE set:
 
     uv run scripts/push_images.py
 
+Only build, without AWS (no login, no push), e.g. to check that the Dockerfiles still build:
+
+    uv run scripts/push_images.py --build-only
+
 The image tag is the service version from its pyproject.toml. The script also writes
 apps/ai-assistant/registry/kustomization.yaml (git-ignored): a Kustomize component that
 points the manifests at your account's ECR, so no account ID is stored in the repo.
 """
 
+import argparse
 import base64
 import shutil
 import subprocess
@@ -32,6 +37,10 @@ class Service:
     name: str
     directory: Path
     version: str
+
+
+def local_image(service: Service) -> str:
+    return f"{REPOSITORY_PREFIX}/{service.name}:{service.version}"
 
 
 @dataclass(frozen=True)
@@ -76,7 +85,9 @@ def write_registry_component(registry: Registry, services: list[Service]) -> Non
 
 def run(command: list[str], stdin: str | None = None) -> str:
     executable = shutil.which(command[0]) or command[0]
-    result = subprocess.run([executable, *command[1:]], input=stdin, capture_output=True, text=True)
+    # Docker prints UTF-8 (BuildKit progress); without an explicit encoding Windows decodes it as cp1250.
+    result = subprocess.run([executable, *command[1:]], input=stdin, capture_output=True,
+                            text=True, encoding="utf-8", errors="replace")
     if result.returncode != 0:
         sys.exit(f"Command failed: {' '.join(command)}\n{result.stderr}")
     return result.stdout
@@ -89,19 +100,44 @@ def docker_login(session: boto3.Session, registry: Registry) -> None:
     run(["docker", "login", "--username", username, "--password-stdin", registry.host], stdin=password)
 
 
-def main() -> None:
+def build(service: Service, image: str) -> None:
+    print(f"Building {image}")
+    run(["docker", "build", "--tag", image, str(service.directory)])
+
+
+def build_locally(services: list[Service]) -> None:
+    for service in services:
+        build(service, local_image(service))
+    print("Done. Images built locally; nothing pushed.")
+
+
+def build_and_push(services: list[Service]) -> None:
     session = boto3.Session()
-    services = find_services()
     registry = find_registry(session)
     write_registry_component(registry, services)
     docker_login(session, registry)
     for service in services:
         image = registry.image(service)
-        print(f"Building {image}")
-        run(["docker", "build", "--tag", image, str(service.directory)])
+        build(service, image)
         print(f"Pushing  {image}")
         run(["docker", "push", image])
     print(f"Done. Image references written to {REGISTRY_COMPONENT.relative_to(REPO_ROOT)}")
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Build service images and push them to ECR.")
+    parser.add_argument("--build-only", action="store_true",
+                        help="build the images locally, without AWS: no login, no push, no image references")
+    return parser.parse_args()
+
+
+def main() -> None:
+    args = parse_args()
+    services = find_services()
+    if args.build_only:
+        build_locally(services)
+    else:
+        build_and_push(services)
 
 
 if __name__ == "__main__":

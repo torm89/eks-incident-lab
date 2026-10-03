@@ -49,7 +49,7 @@ This repo is a sandbox for incident-response practice on EKS:
   - `chaos/scenarios/level-<n>-<layer>/<name>/` - scenarios grouped by level: `level-1-application` (built-in chaos API), `level-2-kubernetes` (Chaos Mesh), `level-3-aws` (AWS FIS). Each has `README.md` (hypothesis, observe, diagnose, recover, verify, hidden solution) plus `inject/` + `recover/` (Kustomize) or `infra/` (OpenTofu).
 - Our own services live in `services/<name>/` (Python >= 3.12, `uv`, `src/` layout, `pytest` tests, `Dockerfile` with a numeric non-root user).
   - The image tag is the `version` in the service's `pyproject.toml`. `scripts/push_images.py` builds and pushes to ECR and writes the image references (account read from STS).
-  - Run `uv run pytest` in the service directory after every change.
+  - Run `uv run pytest` in the service directory after every change; `uv run scripts/push_images.py --build-only` checks the Docker builds without AWS.
 - AI assistant (`apps/ai-assistant/`): `base/` (mock LLM, default, free) and `overlays/real-api/` (paid Anthropic API).
   - Model: `claude-haiku-4-5` (chosen by the user for cost). Only `llm-gateway` holds the API key (Secret `anthropic-api-key`, created by hand, never in the repo).
   - `llm-gateway` exposes the same `/chaos/status` and `/chaos/latency` contract as the Retail Store, so AI scenarios reuse `chaos/base`.
