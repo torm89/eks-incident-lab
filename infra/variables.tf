@@ -16,6 +16,22 @@ variable "availability_zone_count" {
   default     = 2
 }
 
+variable "node_subnet_type" {
+  description = <<-EOT
+    Where worker nodes run:
+    "public"  - nodes have public IPs, no NAT gateway. Cheapest: image downloads are free.
+    "private" - nodes are hidden behind a NAT gateway. Closer to production, but you pay for NAT hours and data.
+    Inbound internet traffic to nodes is blocked by security groups in both modes.
+  EOT
+  type        = string
+  default     = "public"
+
+  validation {
+    condition     = contains(["public", "private"], var.node_subnet_type)
+    error_message = "node_subnet_type must be \"public\" or \"private\"."
+  }
+}
+
 variable "kubernetes_version" {
   description = "Kubernetes version of the EKS control plane."
   type        = string

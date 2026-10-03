@@ -13,12 +13,22 @@ variable "vpc_id" {
   type        = string
 }
 
-variable "subnet_ids" {
-  description = "IDs of the private subnets for the control plane and worker nodes."
+variable "node_subnet_ids" {
+  description = "IDs of the subnets for worker nodes."
   type        = list(string)
 
   validation {
-    condition     = length(var.subnet_ids) >= 2
+    condition     = length(var.node_subnet_ids) >= 2
+    error_message = "EKS requires at least 2 subnets."
+  }
+}
+
+variable "control_plane_subnet_ids" {
+  description = "IDs of the private subnets for the control plane network interfaces."
+  type        = list(string)
+
+  validation {
+    condition     = length(var.control_plane_subnet_ids) >= 2
     error_message = "EKS requires at least 2 subnets."
   }
 }

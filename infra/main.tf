@@ -4,6 +4,7 @@ module "network" {
   name                    = var.environment_name
   vpc_cidr                = var.vpc_cidr
   availability_zone_count = var.availability_zone_count
+  node_subnet_type        = var.node_subnet_type
 }
 
 module "eks" {
@@ -12,8 +13,9 @@ module "eks" {
   cluster_name       = var.environment_name
   kubernetes_version = var.kubernetes_version
 
-  vpc_id     = module.network.vpc_id
-  subnet_ids = module.network.private_subnet_ids
+  vpc_id                   = module.network.vpc_id
+  node_subnet_ids          = module.network.node_subnet_ids
+  control_plane_subnet_ids = module.network.private_subnet_ids
 
   node_instance_types = var.node_instance_types
   node_capacity_type  = var.node_capacity_type

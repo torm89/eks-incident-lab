@@ -5,7 +5,7 @@ variable "cluster_name" {
 }
 
 variable "availability_zone" {
-  description = "Availability zone whose private subnets lose network connectivity."
+  description = "Availability zone whose worker node subnets lose network connectivity."
   type        = string
   default     = "eu-west-1a"
 }

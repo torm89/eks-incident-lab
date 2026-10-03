@@ -17,3 +17,13 @@ variable "availability_zone_count" {
     error_message = "EKS requires subnets in at least 2 availability zones."
   }
 }
+
+variable "node_subnet_type" {
+  description = "Where worker nodes run: \"public\" (own public IPs, no NAT gateway) or \"private\" (behind a NAT gateway)."
+  type        = string
+
+  validation {
+    condition     = contains(["public", "private"], var.node_subnet_type)
+    error_message = "node_subnet_type must be \"public\" or \"private\"."
+  }
+}

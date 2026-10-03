@@ -2,7 +2,7 @@
 
 **Level:** 3 - AWS &nbsp;|&nbsp; **Tool:** AWS FIS `aws:network:disrupt-connectivity`
 
-Private subnets in `eu-west-1a` lose all network traffic for 5 minutes.
+The worker node subnets in `eu-west-1a` lose all network traffic for 5 minutes. Works in both `node_subnet_type` modes.
 
 ## Hypothesis
 

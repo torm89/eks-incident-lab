@@ -1,6 +1,6 @@
 # The template is free. You pay only while the experiment runs (about $0.10 per action-minute).
 resource "aws_fis_experiment_template" "this" {
-  description = "Cut all network traffic of the private subnets in one availability zone"
+  description = "Cut all network traffic of the worker node subnets in one availability zone"
   role_arn    = module.fis_role.arn
 
   stop_condition {
@@ -13,7 +13,7 @@ resource "aws_fis_experiment_template" "this" {
 
     target {
       key   = "Subnets"
-      value = "private-subnets-in-az"
+      value = "node-subnets-in-az"
     }
 
     parameter {
@@ -29,7 +29,7 @@ resource "aws_fis_experiment_template" "this" {
 
   # Found by tags at start time, so the template can exist before the cluster.
   target {
-    name           = "private-subnets-in-az"
+    name           = "node-subnets-in-az"
     resource_type  = "aws:ec2:subnet"
     selection_mode = "ALL"
 
@@ -39,10 +39,11 @@ resource "aws_fis_experiment_template" "this" {
       value = "torm-eks"
     }
 
-    # Set by infra/modules/network on private subnets only.
+    # Set by infra/modules/network on the subnets that host worker nodes
+    # (public or private, depending on node_subnet_type).
     resource_tag {
-      key   = "kubernetes.io/role/internal-elb"
-      value = "1"
+      key   = "NodeSubnet"
+      value = "true"
     }
 
     filter {

@@ -18,7 +18,8 @@ This repo is a sandbox for incident-response practice on EKS:
   - `infra/` - the environment (network, EKS).
   - `chaos/scenarios/level-3-aws/<name>/infra/` - one AWS FIS experiment template per scenario, with its own IAM role (shared module `chaos/modules/fis-role`) and state key `chaos/<name>/terraform.tfstate`. Targets are found by tags, never by IDs from `infra/` state.
 - `infra/` is a single root module (one state in S3 bucket `<state-bucket>`, locked with `use_lockfile`). `infra/main.tf` wires child modules together through their outputs:
-  - `infra/modules/network/` - VPC, subnets, NAT gateway.
+  - `infra/modules/network/` - VPC, subnets, NAT gateway (only when `node_subnet_type = "private"`).
+  - `node_subnet_type` (`public` default, or `private`) decides where worker nodes run. Subnets hosting nodes are tagged `NodeSubnet=true`: use that tag (not public/private tags) to target nodes' subnets, e.g. in FIS.
   - `infra/modules/eks/` - EKS cluster and node group.
   - Defaults live in the root `variables.tf`. Child module variables have no defaults.
 - Nothing that runs inside the cluster is managed by OpenTofu. Kubernetes objects are plain Kustomize, applied with kubectl, so destroying the cluster leaves no stale state.
