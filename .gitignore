@@ -14,3 +14,7 @@ crash.log
 
 # Kustomize Helm chart cache
 charts/
+
+# Local, account-specific settings
+backend.hcl
+apps/ai-assistant/registry/

@@ -23,7 +23,7 @@ customer ──► ai-assistant ──► llm-gateway ──► mock (default, f
 Needs the cluster, the Retail Store (`apps/retail-store`) and the images in ECR.
 
 ```bash
-uv run scripts/push_images.py           # build + push both images (once per cluster)
+uv run scripts/push_images.py           # build + push both images, write image references (once per cluster)
 kubectl apply -k apps/ai-assistant/base
 kubectl -n ai-assistant get pods
 ```
@@ -83,6 +83,6 @@ uv sync
 uv run pytest
 ```
 
-After a change: bump `version` in the service's `pyproject.toml` **and** `newTag` in
-`apps/ai-assistant/base/kustomization.yaml`, then run `uv run scripts/push_images.py`.
-The script refuses to push when the two do not match.
+After a change: bump `version` in the service's `pyproject.toml`, then run `uv run scripts/push_images.py`.
+The script pushes the new tag and regenerates `apps/ai-assistant/registry/` (git-ignored image references
+for your AWS account). Apply `apps/ai-assistant/base` again to roll it out.

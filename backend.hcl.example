@@ -1,0 +1,3 @@
+# Copy to backend.hcl (git-ignored) and set your own S3 bucket for OpenTofu state.
+# Every OpenTofu root in this repo reads it, see README "Local setup".
+bucket = "my-tofu-state-bucket"

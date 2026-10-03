@@ -33,7 +33,7 @@ tofu output -raw start_experiment   # prints the start command: run it
 
 ```bash
 # Ends by itself after 5 minutes. Stop it earlier:
-aws fis stop-experiment --profile <aws-profile> --region eu-west-1 --id <experiment-id>
+aws fis stop-experiment --region eu-west-1 --id <experiment-id>
 ```
 
 ## Verify

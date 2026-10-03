@@ -8,6 +8,7 @@ Break a microservices store and an AI shopping assistant on purpose, then detect
 ![Chaos scenarios](https://img.shields.io/badge/chaos_scenarios-10-red)
 ![Claude](https://img.shields.io/badge/AI-Claude_Haiku_4.5-D97757?logo=anthropic&logoColor=white)
 ![Cost](https://img.shields.io/badge/cost-~%240.20%2Fsession-brightgreen)
+![License: MIT](https://img.shields.io/badge/license-MIT-blue)
 ![Built with Claude Code](https://img.shields.io/badge/built_with-Claude_Code-D97757?logo=anthropic&logoColor=white)
 
 ## Why this lab
@@ -74,6 +75,34 @@ How to run them: [chaos/README.md](chaos/README.md).
 
 Requirements: OpenTofu >= 1.10, AWS CLI with a configured profile, kubectl, **Helm 3** (kubectl's built-in kustomize does not work with Helm 4), Docker and [uv](https://docs.astral.sh/uv/) for the AI assistant.
 
+### Local setup (once)
+
+Your account details stay on your machine, never in the repo:
+
+1. An S3 bucket for OpenTofu state, then:
+
+   ```bash
+   cp backend.hcl.example backend.hcl   # git-ignored: set your bucket name
+   ```
+
+2. In every new shell, from the repo root, point the AWS tools and OpenTofu at your profile and bucket:
+
+   ```powershell
+   # PowerShell
+   $env:AWS_PROFILE = "<your-aws-profile>"
+   $env:TF_CLI_ARGS_init = "-backend-config=$PWD/backend.hcl"
+   ```
+
+   ```bash
+   # bash / zsh
+   export AWS_PROFILE=<your-aws-profile>
+   export TF_CLI_ARGS_init="-backend-config=$PWD/backend.hcl"
+   ```
+
+The region is `eu-west-1` (set in the providers and backends).
+
+### Run
+
 ```bash
 # 1. Cluster (~20 min)
 cd infra
@@ -81,7 +110,7 @@ cp terraform.tfvars.example terraform.tfvars   # set your IP in api_allowed_cidr
 tofu init
 tofu apply
 cd ..
-aws eks update-kubeconfig --region eu-west-1 --profile <aws-profile> --name torm-eks
+aws eks update-kubeconfig --region eu-west-1 --name torm-eks
 
 # 2. Monitoring
 kubectl kustomize --enable-helm platform/monitoring/crds | kubectl apply --server-side -f -
@@ -153,7 +182,7 @@ Switch modes while the cluster is **destroyed**. On a running cluster OpenTofu r
 | [`services/`](services/) | Python source of our own services, with tests and Dockerfiles |
 | [`traffic/`](traffic/) | [Artillery](https://www.artillery.io/) load generators for the store and the assistant |
 | [`chaos/`](chaos/) | Chaos Mesh engine, shared chaos Job, scenarios grouped by level, AWS FIS templates |
-| [`scripts/`](scripts/) | `push_images.py`: build, check and push service images to ECR |
+| [`scripts/`](scripts/) | `push_images.py`: build and push service images to your ECR, generate the image references |
 
 ## Built with AI
 
@@ -168,7 +197,11 @@ The repository conventions the AI follows are in [CLAUDE.md](CLAUDE.md).
 ## Details
 
 - **Cluster defaults:** region `eu-west-1`, Kubernetes 1.36, 2 spot `t3.medium` nodes, public node subnets.
-- **State:** S3 bucket `<state-bucket>`, key `infra/terraform.tfstate`, locked with `use_lockfile`.
+- **State:** your S3 bucket from `backend.hcl`, key `infra/terraform.tfstate`, locked with `use_lockfile` (no DynamoDB table).
 - **Grafana** has no login: it is reachable only through `kubectl port-forward`.
 - **Store UI:** `kubectl -n retail-store port-forward svc/ui 8080:80`, then http://localhost:8080.
 - **More load:** `kubectl -n traffic scale deploy/load-generator --replicas=3`.
+
+## License
+
+[MIT](LICENSE)

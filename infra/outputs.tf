@@ -15,7 +15,7 @@ output "cluster_endpoint" {
 
 output "configure_kubectl" {
   description = "Command that adds the cluster to your local kubeconfig."
-  value       = "aws eks update-kubeconfig --region ${data.aws_region.current.region} --profile <aws-profile> --name ${module.eks.cluster_name}"
+  value       = "aws eks update-kubeconfig --region ${data.aws_region.current.region} --name ${module.eks.cluster_name}"
 }
 
 output "container_repository_urls" {
