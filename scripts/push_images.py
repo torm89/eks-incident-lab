@@ -9,6 +9,7 @@ apps/ai-assistant/base/kustomization.yaml points at a different tag, so the clus
 always runs exactly what was pushed.
 """
 
+import base64
 import shutil
 import subprocess
 import sys
@@ -16,6 +17,7 @@ import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 
+import boto3
 import yaml
 
 AWS_PROFILE = "<aws-profile>"
@@ -74,8 +76,11 @@ def run(command: list[str], stdin: str | None = None) -> str:
 
 
 def docker_login() -> None:
-    password = run(["aws", "ecr", "get-login-password", "--profile", AWS_PROFILE, "--region", AWS_REGION])
-    run(["docker", "login", "--username", "AWS", "--password-stdin", REGISTRY], stdin=password)
+    # boto3 instead of the aws CLI: the CLI may live in another Python than the one `uv run` puts on PATH.
+    ecr = boto3.Session(profile_name=AWS_PROFILE, region_name=AWS_REGION).client("ecr")
+    token = ecr.get_authorization_token()["authorizationData"][0]["authorizationToken"]
+    username, password = base64.b64decode(token).decode().split(":", 1)
+    run(["docker", "login", "--username", username, "--password-stdin", REGISTRY], stdin=password)
 
 
 def main() -> None:
