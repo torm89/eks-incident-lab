@@ -67,6 +67,19 @@
         "useValueForTime": true
       },
       {
+        "name": "Alerts firing",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "enable": true,
+        "iconColor": "orange",
+        "expr": "ALERTS{alertstate=\"firing\", service=\"retail-store\"} or ALERTS{alertstate=\"firing\", namespace=\"$namespace\"}",
+        "titleFormat": "{{alertname}} ({{severity}})",
+        "step": "30s",
+        "useValueForTime": false
+      },
+      {
         "name": "Rollouts",
         "datasource": {
           "type": "prometheus",
@@ -434,7 +447,7 @@
     {
       "id": 7,
       "type": "row",
-      "title": "Services: rate, errors, duration",
+      "title": "SLOs and error budget",
       "collapsed": false,
       "gridPos": {
         "x": 0,
@@ -446,6 +459,224 @@
     },
     {
       "id": 8,
+      "type": "stat",
+      "title": "Store availability: budget left",
+      "description": "SLO 99%: UI request without a 5xx status. Share of the error budget still unused in the selected time range. Below 0: SLO missed.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 6,
+        "w": 6,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.25
+              },
+              {
+                "color": "green",
+                "value": 0.5
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "area",
+        "textMode": "value"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "1 - ((sum(rate(http_server_requests_seconds_count{namespace=\"retail-store\", app_kubernetes_io_name=\"ui\", uri!~\"/actuator.*\", status=~\"5..\"}[$__range]))) / (sum(rate(http_server_requests_seconds_count{namespace=\"retail-store\", app_kubernetes_io_name=\"ui\", uri!~\"/actuator.*\"}[$__range])))) / 0.01",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "type": "stat",
+      "title": "Store latency: budget left",
+      "description": "SLO 95%: UI request faster than 1 s. Share of the error budget still unused in the selected time range. Below 0: SLO missed.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 6,
+        "y": 6,
+        "w": 6,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.25
+              },
+              {
+                "color": "green",
+                "value": 0.5
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "area",
+        "textMode": "value"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "1 - (((sum(rate(http_server_requests_seconds_count{namespace=\"retail-store\", app_kubernetes_io_name=\"ui\", uri!~\"/actuator.*\"}[$__range])) - sum(rate(http_server_requests_seconds_bucket{namespace=\"retail-store\", app_kubernetes_io_name=\"ui\", uri!~\"/actuator.*\", le=\"1.0\"}[$__range])))) / (sum(rate(http_server_requests_seconds_count{namespace=\"retail-store\", app_kubernetes_io_name=\"ui\", uri!~\"/actuator.*\"}[$__range])))) / 0.05",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "type": "timeseries",
+      "title": "Burn rate (5m window)",
+      "description": "How fast each SLO uses its error budget. 1 = sustainable. Alerts: >6x warning, >14.4x critical (both also need a second window to agree).",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 6,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 6
+              },
+              {
+                "color": "red",
+                "value": 14.4
+              }
+            ]
+          },
+          "custom": {
+            "thresholdsStyle": {
+              "mode": "line+area"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "slo:sli_error:ratio_rate5m{slo=\"store-availability\"} / 0.01",
+          "legendFormat": "Store availability",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "slo:sli_error:ratio_rate5m{slo=\"store-latency\"} / 0.05",
+          "legendFormat": "Store latency",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "type": "row",
+      "title": "Services: rate, errors, duration",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 14,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 12,
       "type": "timeseries",
       "title": "Requests / s by service",
       "description": "Java services and catalog (Go). checkout exposes no HTTP metrics.",
@@ -455,7 +686,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 6,
+        "y": 15,
         "w": 12,
         "h": 8
       },
@@ -498,7 +729,7 @@
       ]
     },
     {
-      "id": 9,
+      "id": 13,
       "type": "timeseries",
       "title": "Error ratio (5xx) by service",
       "description": "Share of requests that fail, per service. Line: 5%.",
@@ -508,7 +739,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 6,
+        "y": 15,
         "w": 12,
         "h": 8
       },
@@ -569,7 +800,7 @@
       ]
     },
     {
-      "id": 10,
+      "id": 14,
       "type": "timeseries",
       "title": "Latency p95 by service",
       "description": "95th percentile per service. Catalog is often the root cause of a slow UI.",
@@ -579,7 +810,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 14,
+        "y": 23,
         "w": 12,
         "h": 8
       },
@@ -640,7 +871,7 @@
       ]
     },
     {
-      "id": 11,
+      "id": 15,
       "type": "timeseries",
       "title": "UI latency: successful vs failed",
       "description": "p50, p95 and p99 by outcome. Fast failures must not hide slow successes.",
@@ -650,7 +881,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 14,
+        "y": 23,
         "w": 12,
         "h": 8
       },
@@ -702,20 +933,20 @@
       ]
     },
     {
-      "id": 12,
+      "id": 16,
       "type": "row",
       "title": "Saturation: pods and nodes",
       "collapsed": false,
       "gridPos": {
         "x": 0,
-        "y": 22,
+        "y": 31,
         "w": 24,
         "h": 1
       },
       "panels": []
     },
     {
-      "id": 13,
+      "id": 17,
       "type": "timeseries",
       "title": "CPU by pod",
       "description": "CPU cores used by each pod.",
@@ -725,7 +956,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 23,
+        "y": 32,
         "w": 8,
         "h": 8
       },
@@ -759,7 +990,7 @@
       ]
     },
     {
-      "id": 14,
+      "id": 18,
       "type": "timeseries",
       "title": "Memory, % of limit",
       "description": "Working set memory as a share of the memory limit. At 100% the container is OOM-killed.",
@@ -769,7 +1000,7 @@
       },
       "gridPos": {
         "x": 8,
-        "y": 23,
+        "y": 32,
         "w": 8,
         "h": 8
       },
@@ -825,7 +1056,7 @@
       ]
     },
     {
-      "id": 15,
+      "id": 19,
       "type": "timeseries",
       "title": "Container restarts (15 min)",
       "description": "Restarts in the last 15 minutes: crashes, OOM kills or failed liveness probes.",
@@ -835,7 +1066,7 @@
       },
       "gridPos": {
         "x": 16,
-        "y": 23,
+        "y": 32,
         "w": 8,
         "h": 8
       },
@@ -869,7 +1100,7 @@
       ]
     },
     {
-      "id": 16,
+      "id": 20,
       "type": "timeseries",
       "title": "CPU throttling",
       "description": "Share of CPU periods in which a container hit its CPU limit and had to wait.",
@@ -879,7 +1110,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 31,
+        "y": 40,
         "w": 8,
         "h": 8
       },
@@ -931,7 +1162,7 @@
       ]
     },
     {
-      "id": 17,
+      "id": 21,
       "type": "timeseries",
       "title": "Node CPU and memory",
       "description": "Utilization of each worker node. Losing one node puts all load on the other.",
@@ -941,7 +1172,7 @@
       },
       "gridPos": {
         "x": 8,
-        "y": 31,
+        "y": 40,
         "w": 8,
         "h": 8
       },
@@ -1002,7 +1233,7 @@
       ]
     },
     {
-      "id": 18,
+      "id": 22,
       "type": "timeseries",
       "title": "Pods per node, % of max",
       "description": "Running pods vs the node's pod limit (17 on t3.medium). A full node cannot take moved pods.",
@@ -1012,7 +1243,7 @@
       },
       "gridPos": {
         "x": 16,
-        "y": 31,
+        "y": 40,
         "w": 8,
         "h": 8
       },
@@ -1064,20 +1295,20 @@
       ]
     },
     {
-      "id": 19,
+      "id": 23,
       "type": "row",
       "title": "Dependencies: data stores",
       "collapsed": false,
       "gridPos": {
         "x": 0,
-        "y": 39,
+        "y": 48,
         "w": 24,
         "h": 1
       },
       "panels": []
     },
     {
-      "id": 20,
+      "id": 24,
       "type": "state-timeline",
       "title": "Data store pods",
       "description": "Readiness history of MySQL, PostgreSQL, Redis, RabbitMQ and DynamoDB Local.",
@@ -1087,7 +1318,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 40,
+        "y": 49,
         "w": 24,
         "h": 8
       },

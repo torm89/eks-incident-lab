@@ -38,6 +38,10 @@ This repo is a sandbox for incident-response practice on EKS:
   - Layout: golden signals (traffic, errors, latency, saturation) as stats in the top row, then RED per service, then USE/saturation.
   - Percentiles from histograms, never averages; split latency by outcome; `$__rate_interval` in every `rate()`; a description and unit on every panel; thresholds on stats.
   - Annotations mark chaos Jobs (`*-inject-*`, `*-recover-*`) and rollouts. Validate all queries with `promtool` after changes.
+- Alerts are code: `scripts/generate_alerts.py` writes `platform/monitoring/alerts/*.yaml` (PrometheusRule); SLOs live in `scripts/slo_definitions.py`, shared with the dashboards. After a change run `uv run scripts/generate_alerts.py` and `uv run scripts/test_alerts.py` (promtool unit tests in `platform/monitoring/alerts/tests/`).
+  - Hybrid: symptoms = SLO multiwindow multi-burn-rate alerts (Google SRE workbook, windows scaled 12x: fast 14.4x on 5m+1m = critical, slow 6x on 30m+5m = warning, min 10 events); causes = threshold alerts, always `warning`.
+  - Every alert has labels `severity`, `service` (= namespace = dashboard uid) and annotations `summary`, `description`, `runbook_url` (section in `docs/runbooks/alerts.md`), `dashboard`.
+  - Alertmanager: UI only (receivers without integrations). Notification secrets (webhooks) never go into the repo.
 - Metrics of our services: LLM calls follow the OpenTelemetry GenAI conventions (`gen_ai_client_operation_duration_seconds`, `gen_ai_client_token_usage`, labels `gen_ai_*`, `error_type` only on failure). Service-specific metrics use the `ai_assistant_` / `llm_gateway_` prefix.
 - Everything for failure injection lives in `chaos/`. Chaos tooling is optional and installed only when practicing.
   - `chaos/chaos-mesh/` - Chaos Mesh engine (same pattern as `platform/`: `crds/` first, then Helm via Kustomize).

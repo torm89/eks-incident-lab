@@ -10,6 +10,23 @@ Failure injection for the Retail Store app. Each scenario is a small incident ex
 
 Every scenario README has a hidden **Solution** section. Try first, then open it.
 
+Measure your **time to detect**: the dashboards show a red **Chaos injected** marker and an orange **Alerts firing** marker.
+Expected alerts per scenario:
+
+| Scenario | Expected alerts |
+|---|---|
+| orders-http-500 | `StoreAvailabilityBudgetBurnSlow` (or `...Fast`, depending on how many requests hit orders) |
+| catalog-latency | `StoreLatencyBudgetBurn*` |
+| llm-rate-limit | `AssistantAvailabilityBudgetBurnFast`, `LlmRetryAmplification` |
+| llm-slow | `AssistantLatencyBudgetBurn*` |
+| ai-tool-cascade | `AssistantToolQualityBudgetBurnFast`, `StoreLatencyBudgetBurn*` |
+| catalog-db-pod-kill | `DataStoreNotReady`, `StoreAvailabilityBudgetBurn*` |
+| checkout-redis-network-loss | `StoreLatencyBudgetBurn*` and/or `StoreAvailabilityBudgetBurn*` |
+| node-spot-interruption, node-terminate, az-network-disruption | built-in `KubeNodeNotReady` / `KubePodNotReady`, plus SLO alerts for the affected services |
+
+The SLO alerts are verified by unit tests; the per-scenario mapping is the hypothesis to check during practice.
+
+
 ## Scenarios
 
 | Scenario | Level | Tool | Setup |

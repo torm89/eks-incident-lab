@@ -9,13 +9,16 @@ Design follows common practice:
 - Percentiles from histograms, never averages; latency split by outcome so fast failures do not hide slow successes.
 - Every panel has a description and a unit; stats and key graphs have thresholds.
 - $__rate_interval in every rate(), a datasource variable, shared crosshair, links between the lab dashboards.
-- Annotations mark chaos injections, recoveries and rollouts, so cause and effect line up in time.
+- An SLO row: error budget left in the session and burn rate, the same SLOs as the alerts (slo_definitions.py).
+- Annotations mark chaos injections, recoveries, firing alerts and rollouts, so cause, detection and effect line up in time.
 """
 
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
+
+from slo_definitions import FAST_BURN, SLOW_BURN, slos_for
 
 OUTPUT_DIR = Path(__file__).resolve().parent.parent / "platform" / "monitoring" / "dashboards"
 LAB_TAG = "eks-incident-lab"
@@ -144,7 +147,7 @@ def query_variable(name: str, label: str, query: str, default: str, include_all:
     return variable
 
 
-def annotations(namespace: str) -> list[dict[str, Any]]:
+def annotations(namespace: str, service: str) -> list[dict[str, Any]]:
     def prometheus_annotation(name: str, expr: str, title: str, color: str, use_value_for_time: bool) -> dict[str, Any]:
         return {"name": name, "datasource": DATASOURCE, "enable": True, "iconColor": color, "expr": expr,
                 "titleFormat": title, "step": "30s", "useValueForTime": use_value_for_time}
@@ -157,6 +160,11 @@ def annotations(namespace: str) -> list[dict[str, Any]]:
         builtin,
         prometheus_annotation("Chaos injected", job_start.format(step="inject"), "Chaos: {{job_name}}", "red", True),
         prometheus_annotation("Chaos recovered", job_start.format(step="recover"), "Recover: {{job_name}}", "green", True),
+        prometheus_annotation(
+            "Alerts firing",
+            f'ALERTS{{alertstate="firing", service="{service}"}} or ALERTS{{alertstate="firing", namespace="{namespace}"}}',
+            "{{alertname}} ({{severity}})", "orange", False,
+        ),
         prometheus_annotation(
             "Rollouts",
             f'changes(kube_deployment_status_observed_generation{{namespace="{namespace}"}}[1m]) > 0',
@@ -180,7 +188,7 @@ def dashboard(uid: str, title: str, description: str, namespace: str,
         "editable": True,
         "links": [{"title": "Lab dashboards", "type": "dashboards", "tags": [LAB_TAG], "asDropdown": True,
                    "includeVars": False, "keepTime": True}],
-        "annotations": {"list": annotations(namespace)},
+        "annotations": {"list": annotations(namespace, uid)},
         "templating": {"list": [datasource_variable(), *variables]},
         "panels": layout(rows),
     }
@@ -206,6 +214,27 @@ def saturation_panels(namespace: str) -> list[Panel]:
               [target(f'sum by (pod) (increase(kube_pod_container_status_restarts_total{{namespace="{namespace}"}}[15m]))',
                       "{{pod}}")], "none", width=8),
     ]
+
+
+def slo_row(service: str) -> Row:
+    """Error budget left in the selected time range (one session) and burn rate per SLO."""
+    slos = slos_for(service)
+    stat_width = (GRID_WIDTH // 2) // len(slos)
+    budget_left = [
+        stat(f"{slo.title}: budget left", f"SLO {slo.objective:.0%}: {slo.good_event}. "
+             "Share of the error budget still unused in the selected time range. Below 0: SLO missed.",
+             f'1 - (({slo.bad("$__range")}) / ({slo.total("$__range")})) / {slo.error_budget}',
+             "percentunit", [("red", None), ("yellow", 0.25), ("green", 0.5)], width=stat_width)
+        for slo in slos
+    ]
+    burn_rate = graph(
+        "Burn rate (5m window)",
+        f"How fast each SLO uses its error budget. 1 = sustainable. Alerts: >{SLOW_BURN.burn_rate}x warning, "
+        f">{FAST_BURN.burn_rate}x critical (both also need a second window to agree).",
+        targets(*[(f'slo:sli_error:ratio_rate5m{{slo="{slo.name}"}} / {slo.error_budget}', slo.title) for slo in slos]),
+        "none", steps=[("green", None), ("yellow", SLOW_BURN.burn_rate), ("red", FAST_BURN.burn_rate)], width=GRID_WIDTH // 2,
+    )
+    return Row("SLOs and error budget", [*budget_left, burn_rate])
 
 
 # ---------------------------------------------------------------- Retail Store
@@ -285,7 +314,7 @@ def retail_store() -> dict[str, Any]:
         "Golden signals, RED per service, saturation and data stores of the Retail Store Sample App.",
         "$namespace",
         [query_variable("namespace", "Namespace", "label_values(kube_pod_info, namespace)", "retail-store")],
-        [golden, red, saturation, dependencies],
+        [golden, slo_row("retail-store"), red, saturation, dependencies],
     )
 
 
@@ -370,7 +399,7 @@ def ai_assistant() -> dict[str, Any]:
         "ai-assistant",
         [query_variable("model", "Model", "label_values(gen_ai_client_operation_duration_seconds_count, gen_ai_request_model)",
                         "All", include_all=True)],
-        [golden, chat_row, llm, tools, gateway, Row("Saturation", saturation_panels("ai-assistant"))],
+        [golden, slo_row("ai-assistant"), chat_row, llm, tools, gateway, Row("Saturation", saturation_panels("ai-assistant"))],
     )
 
 

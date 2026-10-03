@@ -67,6 +67,19 @@
         "useValueForTime": true
       },
       {
+        "name": "Alerts firing",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "enable": true,
+        "iconColor": "orange",
+        "expr": "ALERTS{alertstate=\"firing\", service=\"ai-assistant\"} or ALERTS{alertstate=\"firing\", namespace=\"ai-assistant\"}",
+        "titleFormat": "{{alertname}} ({{severity}})",
+        "step": "30s",
+        "useValueForTime": false
+      },
+      {
         "name": "Rollouts",
         "datasource": {
           "type": "prometheus",
@@ -440,7 +453,7 @@
     {
       "id": 7,
       "type": "row",
-      "title": "Chat: rate, errors, duration",
+      "title": "SLOs and error budget",
       "collapsed": false,
       "gridPos": {
         "x": 0,
@@ -452,6 +465,298 @@
     },
     {
       "id": 8,
+      "type": "stat",
+      "title": "Assistant availability: budget left",
+      "description": "SLO 95%: question answered (no LLM error, no step limit). Share of the error budget still unused in the selected time range. Below 0: SLO missed.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 6,
+        "w": 4,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.25
+              },
+              {
+                "color": "green",
+                "value": 0.5
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "area",
+        "textMode": "value"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "1 - ((sum(rate(ai_assistant_chat_requests_total{namespace=\"ai-assistant\", outcome!=\"success\"}[$__range]))) / (sum(rate(ai_assistant_chat_requests_total{namespace=\"ai-assistant\"}[$__range])))) / 0.05",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "type": "stat",
+      "title": "Assistant latency: budget left",
+      "description": "SLO 95%: question answered within 30 s. Share of the error budget still unused in the selected time range. Below 0: SLO missed.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 4,
+        "y": 6,
+        "w": 4,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.25
+              },
+              {
+                "color": "green",
+                "value": 0.5
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "area",
+        "textMode": "value"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "1 - (((sum(rate(ai_assistant_chat_duration_seconds_count{namespace=\"ai-assistant\"}[$__range])) - sum(rate(ai_assistant_chat_duration_seconds_bucket{namespace=\"ai-assistant\", le=\"30.0\"}[$__range])))) / (sum(rate(ai_assistant_chat_duration_seconds_count{namespace=\"ai-assistant\"}[$__range])))) / 0.05",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "type": "stat",
+      "title": "Assistant tool quality: budget left",
+      "description": "SLO 95%: tool call that returned data, not an error (catches HTTP 200 answers built on failed tools). Share of the error budget still unused in the selected time range. Below 0: SLO missed.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 6,
+        "w": 4,
+        "h": 4
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.25
+              },
+              {
+                "color": "green",
+                "value": 0.5
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "area",
+        "textMode": "value"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "1 - ((sum(rate(ai_assistant_tool_call_duration_seconds_count{namespace=\"ai-assistant\", outcome!=\"success\"}[$__range]))) / (sum(rate(ai_assistant_tool_call_duration_seconds_count{namespace=\"ai-assistant\"}[$__range])))) / 0.05",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "type": "timeseries",
+      "title": "Burn rate (5m window)",
+      "description": "How fast each SLO uses its error budget. 1 = sustainable. Alerts: >6x warning, >14.4x critical (both also need a second window to agree).",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 6,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 6
+              },
+              {
+                "color": "red",
+                "value": 14.4
+              }
+            ]
+          },
+          "custom": {
+            "thresholdsStyle": {
+              "mode": "line+area"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "slo:sli_error:ratio_rate5m{slo=\"assistant-availability\"} / 0.05",
+          "legendFormat": "Assistant availability",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "slo:sli_error:ratio_rate5m{slo=\"assistant-latency\"} / 0.05",
+          "legendFormat": "Assistant latency",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "slo:sli_error:ratio_rate5m{slo=\"assistant-tool-quality\"} / 0.05",
+          "legendFormat": "Assistant tool quality",
+          "refId": "C"
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "type": "row",
+      "title": "Chat: rate, errors, duration",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 14,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 13,
       "type": "timeseries",
       "title": "Questions / s by outcome",
       "description": "success, llm_error (no answer from the LLM) or max_steps (agent loop limit).",
@@ -461,7 +766,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 6,
+        "y": 15,
         "w": 6,
         "h": 8
       },
@@ -495,7 +800,7 @@
       ]
     },
     {
-      "id": 9,
+      "id": 14,
       "type": "timeseries",
       "title": "Latency p95 by outcome",
       "description": "Answered vs failed questions. A slow LLM shows up in both.",
@@ -505,7 +810,7 @@
       },
       "gridPos": {
         "x": 6,
-        "y": 6,
+        "y": 15,
         "w": 6,
         "h": 8
       },
@@ -539,7 +844,7 @@
       ]
     },
     {
-      "id": 10,
+      "id": 15,
       "type": "timeseries",
       "title": "Agent steps per answer",
       "description": "LLM calls needed per answered question. A rise means the agent loops more.",
@@ -549,7 +854,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 6,
+        "y": 15,
         "w": 6,
         "h": 8
       },
@@ -583,7 +888,7 @@
       ]
     },
     {
-      "id": 11,
+      "id": 16,
       "type": "timeseries",
       "title": "Cost per answer",
       "description": "Dollars of LLM spend per answered question.",
@@ -593,7 +898,7 @@
       },
       "gridPos": {
         "x": 18,
-        "y": 6,
+        "y": 15,
         "w": 6,
         "h": 8
       },
@@ -627,20 +932,20 @@
       ]
     },
     {
-      "id": 12,
+      "id": 17,
       "type": "row",
       "title": "LLM calls (OpenTelemetry GenAI metrics)",
       "collapsed": false,
       "gridPos": {
         "x": 0,
-        "y": 14,
+        "y": 23,
         "w": 24,
         "h": 1
       },
       "panels": []
     },
     {
-      "id": 13,
+      "id": 18,
       "type": "timeseries",
       "title": "LLM calls / s by result",
       "description": "One call can include SDK retries. error_type: HTTP status, timeout or connection.",
@@ -650,7 +955,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 15,
+        "y": 24,
         "w": 8,
         "h": 8
       },
@@ -684,7 +989,7 @@
       ]
     },
     {
-      "id": 14,
+      "id": 19,
       "type": "timeseries",
       "title": "LLM latency (successful calls)",
       "description": "p50, p95 and p99 of gen_ai.client.operation.duration.",
@@ -694,7 +999,7 @@
       },
       "gridPos": {
         "x": 8,
-        "y": 15,
+        "y": 24,
         "w": 8,
         "h": 8
       },
@@ -746,7 +1051,7 @@
       ]
     },
     {
-      "id": 15,
+      "id": 20,
       "type": "timeseries",
       "title": "Retry amplification",
       "description": "Requests the gateway receives per LLM call. 1 = no retries; 3 = every call retried twice.",
@@ -756,7 +1061,7 @@
       },
       "gridPos": {
         "x": 16,
-        "y": 15,
+        "y": 24,
         "w": 8,
         "h": 8
       },
@@ -808,7 +1113,7 @@
       ]
     },
     {
-      "id": 16,
+      "id": 21,
       "type": "timeseries",
       "title": "Tokens / min by type",
       "description": "gen_ai.client.token.usage: input (prompt, tools, history) and output tokens.",
@@ -818,7 +1123,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 23,
+        "y": 32,
         "w": 12,
         "h": 8
       },
@@ -852,7 +1157,7 @@
       ]
     },
     {
-      "id": 17,
+      "id": 22,
       "type": "timeseries",
       "title": "Tokens per call p95 by type",
       "description": "Large input means long history or big tool results: cost and latency grow with it.",
@@ -862,7 +1167,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 23,
+        "y": 32,
         "w": 12,
         "h": 8
       },
@@ -896,20 +1201,20 @@
       ]
     },
     {
-      "id": 18,
+      "id": 23,
       "type": "row",
       "title": "Tools",
       "collapsed": false,
       "gridPos": {
         "x": 0,
-        "y": 31,
+        "y": 40,
         "w": 24,
         "h": 1
       },
       "panels": []
     },
     {
-      "id": 19,
+      "id": 24,
       "type": "timeseries",
       "title": "Tool calls / s by tool and outcome",
       "description": "error = the tool failed and Claude got an error result instead of data.",
@@ -919,7 +1224,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 32,
+        "y": 41,
         "w": 12,
         "h": 8
       },
@@ -953,7 +1258,7 @@
       ]
     },
     {
-      "id": 20,
+      "id": 25,
       "type": "timeseries",
       "title": "Tool latency p95 by tool",
       "description": "Slow tools make slow answers, even when the LLM is fast.",
@@ -963,7 +1268,7 @@
       },
       "gridPos": {
         "x": 12,
-        "y": 32,
+        "y": 41,
         "w": 12,
         "h": 8
       },
@@ -1015,20 +1320,20 @@
       ]
     },
     {
-      "id": 21,
+      "id": 26,
       "type": "row",
       "title": "LLM gateway",
       "collapsed": false,
       "gridPos": {
         "x": 0,
-        "y": 40,
+        "y": 49,
         "w": 24,
         "h": 1
       },
       "panels": []
     },
     {
-      "id": 22,
+      "id": 27,
       "type": "timeseries",
       "title": "Gateway requests / s by status",
       "description": "Every attempt that reaches the gateway, including SDK retries.",
@@ -1038,7 +1343,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 41,
+        "y": 50,
         "w": 8,
         "h": 8
       },
@@ -1072,7 +1377,7 @@
       ]
     },
     {
-      "id": 23,
+      "id": 28,
       "type": "timeseries",
       "title": "Gateway latency p95",
       "description": "Time to answer one attempt, including injected latency.",
@@ -1082,7 +1387,7 @@
       },
       "gridPos": {
         "x": 8,
-        "y": 41,
+        "y": 50,
         "w": 8,
         "h": 8
       },
@@ -1116,7 +1421,7 @@
       ]
     },
     {
-      "id": 24,
+      "id": 29,
       "type": "timeseries",
       "title": "Injected faults / s",
       "description": "Requests hit by the gateway chaos API. In a real incident this panel does not exist.",
@@ -1126,7 +1431,7 @@
       },
       "gridPos": {
         "x": 16,
-        "y": 41,
+        "y": 50,
         "w": 8,
         "h": 8
       },
@@ -1160,20 +1465,20 @@
       ]
     },
     {
-      "id": 25,
+      "id": 30,
       "type": "row",
       "title": "Saturation",
       "collapsed": false,
       "gridPos": {
         "x": 0,
-        "y": 49,
+        "y": 58,
         "w": 24,
         "h": 1
       },
       "panels": []
     },
     {
-      "id": 26,
+      "id": 31,
       "type": "timeseries",
       "title": "CPU by pod",
       "description": "CPU cores used by each pod.",
@@ -1183,7 +1488,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 50,
+        "y": 59,
         "w": 8,
         "h": 8
       },
@@ -1217,7 +1522,7 @@
       ]
     },
     {
-      "id": 27,
+      "id": 32,
       "type": "timeseries",
       "title": "Memory, % of limit",
       "description": "Working set memory as a share of the memory limit. At 100% the container is OOM-killed.",
@@ -1227,7 +1532,7 @@
       },
       "gridPos": {
         "x": 8,
-        "y": 50,
+        "y": 59,
         "w": 8,
         "h": 8
       },
@@ -1283,7 +1588,7 @@
       ]
     },
     {
-      "id": 28,
+      "id": 33,
       "type": "timeseries",
       "title": "Container restarts (15 min)",
       "description": "Restarts in the last 15 minutes: crashes, OOM kills or failed liveness probes.",
@@ -1293,7 +1598,7 @@
       },
       "gridPos": {
         "x": 16,
-        "y": 50,
+        "y": 59,
         "w": 8,
         "h": 8
       },

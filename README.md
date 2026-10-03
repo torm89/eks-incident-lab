@@ -140,6 +140,29 @@ Then pick a scenario from the table above.
 >
 > If you applied a level-3 scenario, run `tofu destroy` in its `infra/` folder too.
 
+## Alerts
+
+Hybrid alerting, all generated as code and unit-tested with `promtool`:
+
+- **Symptoms** (what customers feel): 5 SLOs with multiwindow, multi-burn-rate alerts from the
+  [Google SRE workbook](https://sre.google/workbook/alerting-on-slos/), windows scaled down 12x to fit a practice session.
+  A total outage pages within about 2 minutes.
+- **Causes** (why): threshold warnings such as `DataStoreNotReady` or `LlmRetryAmplification`, plus the kube-prometheus-stack defaults.
+- **UI only** for now: Alertmanager and Grafana (firing alerts are annotations on the dashboards). Every alert links to the [runbook](docs/runbooks/alerts.md).
+
+| SLO | Objective | Good event |
+|---|---|---|
+| store-availability | 99% | UI request without a 5xx status |
+| store-latency | 95% | UI request faster than 1 s |
+| assistant-availability | 95% | question answered |
+| assistant-latency | 95% | question answered within 30 s |
+| assistant-tool-quality | 95% | tool call returned data (catches HTTP 200 answers built on failed tools) |
+
+```bash
+kubectl -n monitoring port-forward svc/kube-prometheus-stack-alertmanager 9093:9093   # http://localhost:9093
+uv run scripts/generate_alerts.py && uv run scripts/test_alerts.py                     # after changing alerts
+```
+
 ## Cost
 
 | Item | Public mode (default) | Private mode |
@@ -183,8 +206,9 @@ Switch modes while the cluster is **destroyed**. On a running cluster OpenTofu r
 | [`apps/ai-assistant/`](apps/ai-assistant/) | AI shopping assistant + LLM gateway, mock by default ([README](apps/ai-assistant/README.md)) |
 | [`services/`](services/) | Python source of our own services, with tests and Dockerfiles |
 | [`traffic/`](traffic/) | [Artillery](https://www.artillery.io/) load generators for the store and the assistant |
+| [`docs/runbooks/`](docs/runbooks/alerts.md) | What to do when an alert fires |
 | [`chaos/`](chaos/) | Chaos Mesh engine, shared chaos Job, scenarios grouped by level, AWS FIS templates |
-| [`scripts/`](scripts/) | `push_images.py` (build and push service images to your ECR) and `generate_dashboards.py` (Grafana dashboards) |
+| [`scripts/`](scripts/) | `push_images.py` (service images to ECR), `generate_dashboards.py`, `generate_alerts.py` + `test_alerts.py` (SLOs in `slo_definitions.py`) |
 
 ## Built with AI
 

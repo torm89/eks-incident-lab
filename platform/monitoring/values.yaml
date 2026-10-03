@@ -1,9 +1,45 @@
 # Values for the kube-prometheus-stack Helm chart.
 # Tuned for a small, short-lived test cluster: no persistent storage, short retention.
 
-# No alert routing yet. Alerts are still visible in the Prometheus UI.
+# Alertmanager: grouping, inhibition and routing. No notifications yet ("UI only"):
+# firing alerts are visible in the Alertmanager UI and in Grafana.
 alertmanager:
-  enabled: false
+  enabled: true
+  config:
+    global:
+      resolve_timeout: 5m
+    route:
+      receiver: ui-only
+      group_by: [alertname, slo, namespace]
+      group_wait: 30s
+      group_interval: 2m
+      repeat_interval: 1h
+      routes:
+        # Heartbeat alerts from kube-prometheus-stack: always firing by design.
+        - receiver: "null"
+          matchers: ['alertname =~ "Watchdog|InfoInhibitor"']
+    inhibit_rules:
+      # A fast burn (page) makes the slow burn (ticket) of the same SLO redundant.
+      - source_matchers: ['severity = "critical"']
+        target_matchers: ['severity = "warning"']
+        equal: [slo]
+      # Built-in rule: a critical alert silences warnings of the same alert in the same namespace.
+      - source_matchers: ['severity = "critical"']
+        target_matchers: ['severity =~ "warning|info"']
+        equal: [namespace, alertname]
+    # Receivers without integrations: alerts show up in the UI only.
+    # Slack, Discord or e-mail can be added later (the webhook belongs in a Secret, not in the repo).
+    receivers:
+      - name: ui-only
+      - name: "null"
+  alertmanagerSpec:
+    retention: 24h
+    resources:
+      requests:
+        cpu: 20m
+        memory: 64Mi
+      limits:
+        memory: 128Mi
 
 # The EKS control plane is managed by AWS and cannot be scraped.
 kubeControllerManager:
@@ -40,6 +76,9 @@ grafana:
 
 prometheus:
   prometheusSpec:
+    # Load every PrometheusRule in the cluster, not only those labelled for this Helm release
+    # (e.g. platform/monitoring/alerts/).
+    ruleSelectorNilUsesHelmValues: false
     scrapeInterval: 15s
     retention: 1d
     resources:

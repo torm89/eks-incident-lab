@@ -1,6 +1,7 @@
 # Latency histograms for the Spring Boot services (ui, orders, carts).
 # Without them only average latency is available; with them dashboards and alerts can use p95/p99.
 # The 5ms-30s range limits the number of buckets (time series) per endpoint.
+# The 1s SLO bucket (le="1.0") is the latency SLO threshold, see scripts/slo_definitions.py.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -12,7 +13,7 @@ spec:
         - name: ui
           env:
             - name: SPRING_APPLICATION_JSON
-              value: '{"management.metrics.distribution.percentiles-histogram.http.server.requests":true,"management.metrics.distribution.minimum-expected-value.http.server.requests":"5ms","management.metrics.distribution.maximum-expected-value.http.server.requests":"30s"}'
+              value: '{"management.metrics.distribution.percentiles-histogram.http.server.requests":true,"management.metrics.distribution.minimum-expected-value.http.server.requests":"5ms","management.metrics.distribution.maximum-expected-value.http.server.requests":"30s","management.metrics.distribution.slo.http.server.requests":"1s"}'
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -25,7 +26,7 @@ spec:
         - name: orders
           env:
             - name: SPRING_APPLICATION_JSON
-              value: '{"management.metrics.distribution.percentiles-histogram.http.server.requests":true,"management.metrics.distribution.minimum-expected-value.http.server.requests":"5ms","management.metrics.distribution.maximum-expected-value.http.server.requests":"30s"}'
+              value: '{"management.metrics.distribution.percentiles-histogram.http.server.requests":true,"management.metrics.distribution.minimum-expected-value.http.server.requests":"5ms","management.metrics.distribution.maximum-expected-value.http.server.requests":"30s","management.metrics.distribution.slo.http.server.requests":"1s"}'
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -38,4 +39,4 @@ spec:
         - name: carts
           env:
             - name: SPRING_APPLICATION_JSON
-              value: '{"management.metrics.distribution.percentiles-histogram.http.server.requests":true,"management.metrics.distribution.minimum-expected-value.http.server.requests":"5ms","management.metrics.distribution.maximum-expected-value.http.server.requests":"30s"}'
+              value: '{"management.metrics.distribution.percentiles-histogram.http.server.requests":true,"management.metrics.distribution.minimum-expected-value.http.server.requests":"5ms","management.metrics.distribution.maximum-expected-value.http.server.requests":"30s","management.metrics.distribution.slo.http.server.requests":"1s"}'

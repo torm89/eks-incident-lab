@@ -1,0 +1,125 @@
+# Unit tests for the alerting rules: synthetic metrics in, expected alerts out.
+# Run with: uv run scripts/test_alerts.py
+# Firing alerts are checked through the ALERTS series, so tests do not depend on annotation texts.
+rule_files:
+  - slo-rules.yaml
+  - cause-rules.yaml
+
+evaluation_interval: 15s
+
+tests:
+  - name: Store outage pages within 2 minutes
+    interval: 15s
+    input_series:
+      - series: 'http_server_requests_seconds_count{namespace="retail-store", app_kubernetes_io_name="ui", uri="/home", status="500"}'
+        values: '0+15x80'   # 1 request/s, all failing
+    promql_expr_test:
+      - expr: count(ALERTS{alertname="StoreAvailabilityBudgetBurnFast", alertstate="firing", severity="critical"})
+        eval_time: 2m
+        exp_samples:
+          - labels: '{}'
+            value: 1
+
+  - name: 7% errors open a ticket, not a page
+    interval: 15s
+    input_series:
+      - series: 'http_server_requests_seconds_count{namespace="retail-store", app_kubernetes_io_name="ui", uri="/home", status="500"}'
+        values: '0+7x160'   # 0.47 errors/s
+      - series: 'http_server_requests_seconds_count{namespace="retail-store", app_kubernetes_io_name="ui", uri="/home", status="200"}'
+        values: '0+93x160'  # 6.2 successes/s -> 7% errors
+    promql_expr_test:
+      - expr: count(ALERTS{alertname="StoreAvailabilityBudgetBurnSlow", alertstate="firing", severity="warning"})
+        eval_time: 10m
+        exp_samples:
+          - labels: '{}'
+            value: 1
+      - expr: absent(ALERTS{alertname="StoreAvailabilityBudgetBurnFast", alertstate="firing"})
+        eval_time: 10m
+        exp_samples:
+          - labels: '{alertname="StoreAvailabilityBudgetBurnFast", alertstate="firing"}'
+            value: 1
+
+  - name: Errors within the error budget stay quiet
+    interval: 15s
+    input_series:
+      - series: 'http_server_requests_seconds_count{namespace="retail-store", app_kubernetes_io_name="ui", uri="/home", status="500"}'
+        values: '0+1x160'
+      - series: 'http_server_requests_seconds_count{namespace="retail-store", app_kubernetes_io_name="ui", uri="/home", status="200"}'
+        values: '0+199x160' # 0.5% errors
+    promql_expr_test:
+      - expr: absent(ALERTS{service="retail-store", alertstate="firing"})
+        eval_time: 30m
+        exp_samples:
+          - labels: '{alertstate="firing", service="retail-store"}'
+            value: 1
+
+  - name: Slow store pages
+    interval: 15s
+    input_series:
+      - series: 'http_server_requests_seconds_count{namespace="retail-store", app_kubernetes_io_name="ui", uri="/catalog"}'
+        values: '0+15x80'   # 1 request/s
+      - series: 'http_server_requests_seconds_bucket{namespace="retail-store", app_kubernetes_io_name="ui", uri="/catalog", le="1.0"}'
+        values: '0+3x80'    # only 20% faster than 1 s
+    promql_expr_test:
+      - expr: count(ALERTS{alertname="StoreLatencyBudgetBurnFast", alertstate="firing"})
+        eval_time: 3m
+        exp_samples:
+          - labels: '{}'
+            value: 1
+
+  - name: Low traffic does not page on a few errors
+    interval: 15s
+    input_series:
+      - series: 'ai_assistant_chat_requests_total{namespace="ai-assistant", outcome="llm_error"}'
+        values: '0+0.125x80' # 100% errors, but only 2.5 questions per 5 minutes
+    promql_expr_test:
+      - expr: absent(ALERTS{alertname="AssistantAvailabilityBudgetBurnFast", alertstate="firing"})
+        eval_time: 10m
+        exp_samples:
+          - labels: '{alertname="AssistantAvailabilityBudgetBurnFast", alertstate="firing"}'
+            value: 1
+
+  - name: Failing tools page even when answers return HTTP 200
+    interval: 15s
+    input_series:
+      - series: 'ai_assistant_tool_call_duration_seconds_count{namespace="ai-assistant", tool="search_products", outcome="error"}'
+        values: '0+3x80'    # 0.2 tool calls/s, all failing
+      - series: 'ai_assistant_chat_requests_total{namespace="ai-assistant", outcome="success"}'
+        values: '0+3x80'    # every answer still "succeeds"
+    promql_expr_test:
+      - expr: count(ALERTS{alertname="AssistantToolQualityBudgetBurnFast", alertstate="firing"})
+        eval_time: 3m
+        exp_samples:
+          - labels: '{}'
+            value: 1
+      - expr: absent(ALERTS{alertname="AssistantAvailabilityBudgetBurnFast", alertstate="firing"})
+        eval_time: 3m
+        exp_samples:
+          - labels: '{alertname="AssistantAvailabilityBudgetBurnFast", alertstate="firing"}'
+            value: 1
+
+  - name: Data store down
+    interval: 15s
+    input_series:
+      - series: 'kube_pod_status_ready{namespace="retail-store", condition="true", pod="catalog-mysql-0"}'
+        values: '1x4 0x20'  # becomes not ready after 1 minute
+    promql_expr_test:
+      - expr: count(ALERTS{alertname="DataStoreNotReady", alertstate="firing", pod="catalog-mysql-0"})
+        eval_time: 3m
+        exp_samples:
+          - labels: '{}'
+            value: 1
+
+  - name: SDK retries amplify LLM load
+    interval: 15s
+    input_series:
+      - series: 'llm_gateway_requests_total{mode="mock", status="429"}'
+        values: '0+9x80'    # 0.6 requests/s at the gateway
+      - series: 'gen_ai_client_operation_duration_seconds_count{gen_ai_request_model="claude-haiku-4-5", error_type="429"}'
+        values: '0+3x80'    # 0.2 LLM calls/s -> 3 requests per call
+    promql_expr_test:
+      - expr: count(ALERTS{alertname="LlmRetryAmplification", alertstate="firing"})
+        eval_time: 8m
+        exp_samples:
+          - labels: '{}'
+            value: 1
