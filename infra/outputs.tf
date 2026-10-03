@@ -3,6 +3,11 @@ output "vpc_id" {
   value       = module.network.vpc_id
 }
 
+output "region" {
+  description = "AWS region of the environment."
+  value       = data.aws_region.current.region
+}
+
 output "cluster_name" {
   description = "Name of the EKS cluster."
   value       = module.eks.cluster_name

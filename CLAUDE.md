@@ -54,6 +54,7 @@ This repo is a sandbox for incident-response practice on EKS:
   - Model: `claude-haiku-4-5` (chosen by the user for cost). Only `llm-gateway` holds the API key (Secret `anthropic-api-key`, created by hand, never in the repo).
   - `llm-gateway` exposes the same `/chaos/status` and `/chaos/latency` contract as the Retail Store, so AI scenarios reuse `chaos/base`.
 - Synthetic traffic lives in `traffic/` (Kustomize, namespace `traffic`); AI questions in `traffic/ai-assistant/` (apply after `traffic/`). The scenario image tag must match the app release in `apps/retail-store/`.
+- `scripts/lab.py up|down` brings the whole lab up or down (cross-platform: Python, no shell scripts). Keep it in sync when deployment steps change; every step must stay idempotent. External tools run without the uv virtualenv on PATH (the AWS CLI v1 is Python-based).
 - Python code targets Python >= 3.12 (see `pyproject.toml`).
 - Keep costs low: this is a test cluster. Prefer small instance types and make teardown (`tofu destroy`) easy.
 - Never commit secrets, state files or `.tfvars` with real credentials.

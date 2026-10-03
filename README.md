@@ -103,42 +103,55 @@ The region is `eu-west-1` (set in the providers and backends).
 
 ### Run
 
+One command, the same on Windows, Linux and macOS:
+
 ```bash
-# 1. Cluster (~20 min)
-cd infra
-cp terraform.tfvars.example terraform.tfvars   # set your IP in api_allowed_cidrs
-tofu init
-tofu apply
-cd ..
-aws eks update-kubeconfig --region eu-west-1 --name torm-eks
-
-# 2. Monitoring
-kubectl kustomize --enable-helm platform/monitoring/crds | kubectl apply --server-side -f -
-kubectl kustomize --enable-helm platform/monitoring | kubectl apply --server-side -f -
-
-# 3. Store and traffic
-kubectl apply -k apps/retail-store
-kubectl apply -k traffic
-
-# 4. AI assistant (optional, mock LLM: free)
-uv run scripts/push_images.py
-kubectl apply -k apps/ai-assistant/base
-kubectl apply -k traffic/ai-assistant
-
-# 5. Grafana: http://localhost:3000, dashboards "Incident Lab / Retail Store" and "Incident Lab / AI Assistant"
-kubectl -n monitoring port-forward svc/kube-prometheus-stack-grafana 3000:80
+cp infra/terraform.tfvars.example infra/terraform.tfvars   # optional: set your IP in api_allowed_cidrs
+uv run scripts/lab.py up        # ~25 min: cluster, monitoring, store, AI assistant (mock LLM, free), traffic
 ```
 
-Then pick a scenario from the table above.
+It checks the tools first (OpenTofu >= 1.10, Helm 3, Docker, AWS credentials), asks before `tofu apply`,
+waits for every rollout and prints the port-forward commands at the end. Safe to run again after an error.
+Options: `--no-ai` (skip the assistant, no Docker needed), `--yes` (no prompts), `--dry-run` (print the commands only).
+
+Then open Grafana (dashboards **Incident Lab / Retail Store** and **Incident Lab / AI Assistant**) and pick a scenario from the table above:
+
+```bash
+kubectl -n monitoring port-forward svc/kube-prometheus-stack-grafana 3000:80   # http://localhost:3000
+```
 
 > [!WARNING]
 > This lab creates real AWS resources that cost money. Destroy everything when you are done:
 >
 > ```bash
-> cd infra && tofu destroy
+> uv run scripts/lab.py down      # also destroys applied level-3 (FIS) scenarios and Kubernetes load balancers
 > ```
->
-> If you applied a level-3 scenario, run `tofu destroy` in its `infra/` folder too.
+
+<details>
+<summary>What <code>lab.py up</code> runs, step by step</summary>
+
+```bash
+# 1. Cluster
+cd infra && tofu init -backend-config=../backend.hcl && tofu apply && cd ..
+aws eks update-kubeconfig --region eu-west-1 --name torm-eks
+
+# 2. Monitoring (CRDs first)
+kubectl kustomize --enable-helm platform/monitoring/crds | kubectl apply --server-side -f -
+kubectl kustomize --enable-helm platform/monitoring | kubectl apply --server-side -f -
+
+# 3. Store
+kubectl apply -k apps/retail-store
+
+# 4. AI assistant
+uv run scripts/push_images.py
+kubectl apply -k apps/ai-assistant/base
+
+# 5. Traffic
+kubectl apply -k traffic
+kubectl apply -k traffic/ai-assistant
+```
+
+</details>
 
 ## Alerts
 
@@ -208,7 +221,7 @@ Switch modes while the cluster is **destroyed**. On a running cluster OpenTofu r
 | [`traffic/`](traffic/) | [Artillery](https://www.artillery.io/) load generators for the store and the assistant |
 | [`docs/runbooks/`](docs/runbooks/alerts.md) | What to do when an alert fires |
 | [`chaos/`](chaos/) | Chaos Mesh engine, shared chaos Job, scenarios grouped by level, AWS FIS templates |
-| [`scripts/`](scripts/) | `push_images.py` (service images to ECR), `generate_dashboards.py`, `generate_alerts.py` + `test_alerts.py` (SLOs in `slo_definitions.py`) |
+| [`scripts/`](scripts/) | `lab.py` (`up` / `down` for the whole lab), `push_images.py` (service images to ECR), `generate_dashboards.py`, `generate_alerts.py` + `test_alerts.py` (SLOs in `slo_definitions.py`) |
 
 ## Built with AI
 
