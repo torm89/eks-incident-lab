@@ -1,143 +1,174 @@
-# torm-eks
+# eks-incident-lab
 
-A sandbox for practicing incident response on Amazon EKS.
+**A hands-on incident-response lab on Amazon EKS.**
+Break a microservices store and an AI shopping assistant on purpose, then detect, diagnose and fix the outage, like in a real on-call shift.
 
-## Goal
+![Amazon EKS](https://img.shields.io/badge/Amazon_EKS-1.36-FF9900?logo=amazoneks&logoColor=white)
+![OpenTofu](https://img.shields.io/badge/OpenTofu-%E2%89%A51.10-FFDA18?logo=opentofu&logoColor=black)
+![Chaos scenarios](https://img.shields.io/badge/chaos_scenarios-10-red)
+![Claude](https://img.shields.io/badge/AI-Claude_Haiku_4.5-D97757?logo=anthropic&logoColor=white)
+![Cost](https://img.shields.io/badge/cost-~%240.20%2Fsession-brightgreen)
+![Built with Claude Code](https://img.shields.io/badge/built_with-Claude_Code-D97757?logo=anthropic&logoColor=white)
 
-1. **Provision** a test EKS cluster.
-2. **Deploy** a fake application to the cluster.
-3. **Generate** synthetic traffic against the application.
-4. **Inject** a failure into the system.
-5. **Detect and handle** the failure.
+## Why this lab
 
-## Repository layout
+- **Real exercises, not demos.** Every scenario has a hypothesis, signals to watch, a runbook and a hidden solution. You find the cause yourself.
+- **AI failures, not only classic ones.** Rate-limited LLM APIs, slow models, and silent failures where the assistant answers with HTTP 200 but the answer is useless.
+- **Three layers of chaos.** Application (built-in chaos APIs), Kubernetes ([Chaos Mesh](https://chaos-mesh.org/)) and AWS ([Fault Injection Service](https://aws.amazon.com/fis/)).
+- **Cheap and disposable.** Spot nodes, no NAT gateway by default, everything removed with one `tofu destroy`. About $0.20 per practice session.
 
-| Path                     | Purpose                                              |
-|--------------------------|------------------------------------------------------|
-| `infra/`                 | OpenTofu root module: wires network and EKS together |
-| `infra/modules/network/` | Child module: VPC, subnets, NAT gateway (private mode only) |
-| `infra/modules/eks/`     | Child module: EKS cluster and node group             |
-| `apps/retail-store/`     | Kustomize: EKS Workshop Retail Store Sample App      |
-| `apps/ai-assistant/`     | Kustomize: AI shopping assistant + LLM gateway, see [README](apps/ai-assistant/README.md) |
-| `services/`              | Python source of our own services (ai-assistant, llm-gateway) |
-| `scripts/`               | Helper scripts, e.g. `push_images.py` (build + push to ECR) |
-| `traffic/`               | Kustomize: Artillery load generator for the app      |
-| `traffic/ai-assistant/`  | Kustomize: Artillery questions for the AI assistant  |
-| `platform/monitoring/`   | Kustomize + Helm: Prometheus and Grafana             |
-| `chaos/`                 | Failure injection, see [chaos/README.md](chaos/README.md) |
+## How it works
 
-## Requirements
+```mermaid
+flowchart LR
+    traffic["Artillery<br/>synthetic traffic"]
 
-- Python >= 3.12
-- OpenTofu >= 1.10
-- AWS CLI with the `<aws-profile>` profile configured
-- kubectl
-- Helm 3 (kubectl's built-in kustomize does not work with Helm 4)
-- Docker and [uv](https://docs.astral.sh/uv/) (only for the AI assistant)
+    subgraph eks["Amazon EKS"]
+        ui["Retail Store<br/>UI"]
+        services["catalog · carts<br/>checkout · orders"]
+        ai["AI assistant<br/>(Claude, tool use)"]
+        gateway["LLM gateway<br/>mock + chaos API"]
+        prometheus["Prometheus"]
+        grafana["Grafana<br/>dashboards"]
+    end
+
+    anthropic["Anthropic API<br/>(optional, paid)"]
+    chaos["Chaos<br/>app API · Chaos Mesh · AWS FIS"]
+
+    traffic --> ui --> services
+    traffic --> ai
+    ai -- "tools" --> services
+    ai --> gateway
+    gateway -. "real-api overlay" .-> anthropic
+    prometheus -. "scrape" .-> ui & ai & gateway
+    prometheus --> grafana
+    chaos -. "inject" .-> services & gateway & eks
+```
+
+Every practice session follows the same loop:
+
+1. **Steady state** - traffic runs, dashboards are green.
+2. **Inject** - one command breaks something.
+3. **Observe** - what changes in Grafana, and how fast?
+4. **Diagnose** - find the cause with `kubectl`, logs and metrics.
+5. **Recover and verify** - fix it the way you would in production, then confirm the steady state is back.
+
+## Scenarios
+
+| Scenario | Layer | Difficulty | What you learn |
+|---|---|---|---|
+| [orders-http-500](chaos/scenarios/level-1-application/orders-http-500/) | app | ⭐ | "Running" and "Ready" do not mean "working" |
+| [catalog-latency](chaos/scenarios/level-1-application/catalog-latency/) | app | ⭐⭐ | slow is harder to spot than broken |
+| [llm-rate-limit](chaos/scenarios/level-1-application/llm-rate-limit/) | app (AI) | ⭐ | SDK retries multiply load on a rate-limited API |
+| [llm-slow](chaos/scenarios/level-1-application/llm-slow/) | app (AI) | ⭐⭐ | agent latency is the sum of every LLM and tool call |
+| [ai-tool-cascade](chaos/scenarios/level-1-application/ai-tool-cascade/) | app (AI) | ⭐⭐⭐ | HTTP 200 with a useless answer: a silent failure |
+| [catalog-db-pod-kill](chaos/scenarios/level-2-kubernetes/catalog-db-pod-kill/) | Kubernetes | ⭐⭐⭐ | a database restart that loses its data |
+| [checkout-redis-network-loss](chaos/scenarios/level-2-kubernetes/checkout-redis-network-loss/) | Kubernetes | ⭐⭐ | healthy pods, broken network between them |
+| [node-spot-interruption](chaos/scenarios/level-3-aws/node-spot-interruption/) | AWS | ⭐⭐ | losing a spot node with a 2-minute warning |
+| [node-terminate](chaos/scenarios/level-3-aws/node-terminate/) | AWS | ⭐⭐ | losing a node with no warning, capacity headroom |
+| [az-network-disruption](chaos/scenarios/level-3-aws/az-network-disruption/) | AWS | ⭐⭐⭐ | an availability zone goes dark, tolerations and timeouts |
+
+How to run them: [chaos/README.md](chaos/README.md).
+
+## Quick start
+
+Requirements: OpenTofu >= 1.10, AWS CLI with a configured profile, kubectl, **Helm 3** (kubectl's built-in kustomize does not work with Helm 4), Docker and [uv](https://docs.astral.sh/uv/) for the AI assistant.
+
+```bash
+# 1. Cluster (~20 min)
+cd infra
+cp terraform.tfvars.example terraform.tfvars   # set your IP in api_allowed_cidrs
+tofu init
+tofu apply
+cd ..
+aws eks update-kubeconfig --region eu-west-1 --profile <aws-profile> --name torm-eks
+
+# 2. Monitoring
+kubectl kustomize --enable-helm platform/monitoring/crds | kubectl apply --server-side -f -
+kubectl kustomize --enable-helm platform/monitoring | kubectl apply --server-side -f -
+
+# 3. Store and traffic
+kubectl apply -k apps/retail-store
+kubectl apply -k traffic
+
+# 4. AI assistant (optional, mock LLM: free)
+uv run scripts/push_images.py
+kubectl apply -k apps/ai-assistant/base
+kubectl apply -k traffic/ai-assistant
+
+# 5. Grafana: http://localhost:3000, dashboards "Retail Store" and "AI Assistant"
+kubectl -n monitoring port-forward svc/kube-prometheus-stack-grafana 3000:80
+```
+
+Then pick a scenario from the table above.
+
+> [!WARNING]
+> This lab creates real AWS resources that cost money. Destroy everything when you are done:
+>
+> ```bash
+> cd infra && tofu destroy
+> ```
+>
+> If you applied a level-3 scenario, run `tofu destroy` in its `infra/` folder too.
+
+## Cost
+
+| Item | Public mode (default) | Private mode |
+|---|---|---|
+| EKS control plane | $0.10 / hour | $0.10 / hour |
+| 2 × `t3.medium` spot nodes | ~$0.03 / hour | ~$0.03 / hour |
+| NAT gateway (hours + image downloads) | none | ~$0.05 / hour + ~$0.05 / GB |
+| **Typical 1-hour session** | **~$0.20** | **~$0.50** |
+| AI assistant | free (mock LLM) | free (mock LLM) |
+| AI assistant with the real Anthropic API | ~$1-2 / hour (Claude Haiku 4.5) | same |
+| AWS FIS experiment | ~$0.10 per action-minute | same |
+
+Estimates for `eu-west-1`. Check AWS Cost Explorer for real numbers.
 
 ## Network mode: `node_subnet_type`
 
-> [!IMPORTANT]
-> Worker nodes run in **public** subnets by default. This is the cheapest mode.
-> Switch to **private** when you want a production-like setup.
-
 | | `public` (default) | `private` |
 |---|---|---|
-| Where nodes run | public subnets, each node has a public IP | private subnets, no public IPs |
-| Internet access | Internet Gateway (free) | NAT gateway |
-| NAT gateway cost | none | ~$0.05 / hour + ~$0.05 / GB downloaded |
-| Typical session cost | ~$0.15-0.20 | ~$0.50 (most of it: ~5 GB of container images through NAT) |
+| Worker nodes | public subnets, own public IPs | private subnets, no public IPs |
+| Internet access | Internet Gateway (free) | NAT gateway (paid per hour and per GB) |
 | Inbound traffic from the internet | blocked by security groups | blocked by security groups + no public IP |
 | Closer to production | no | yes |
 
-The EKS control plane network interfaces always stay in the private subnets.
-
-Choose the mode in `infra/terraform.tfvars`:
+The EKS control plane network interfaces always stay in the private subnets. Choose the mode in `infra/terraform.tfvars`:
 
 ```hcl
 node_subnet_type = "private"   # or "public" (default)
 ```
 
-or for one run:
-
-```bash
-tofu apply -var node_subnet_type=private
-```
-
 Switch modes while the cluster is **destroyed**. On a running cluster OpenTofu replaces the node group, so all pods restart.
 
-## Create the cluster
+## What is inside
 
-```bash
-cd infra
-cp terraform.tfvars.example terraform.tfvars   # set your IP in api_allowed_cidrs
-tofu init
-tofu apply
-tofu output -raw configure_kubectl   # prints the kubeconfig command: run it
-kubectl get nodes
-```
+| Path | Purpose |
+|---|---|
+| [`infra/`](infra/) | OpenTofu: VPC, EKS (spot node group), ECR. State in S3 with a lock file. |
+| [`platform/monitoring/`](platform/monitoring/) | Prometheus + Grafana (kube-prometheus-stack via Kustomize + Helm), dashboards as code |
+| [`apps/retail-store/`](apps/retail-store/) | [Retail Store Sample App](https://github.com/aws-containers/retail-store-sample-app) from the EKS Workshop, pinned release + patches |
+| [`apps/ai-assistant/`](apps/ai-assistant/) | AI shopping assistant + LLM gateway, mock by default ([README](apps/ai-assistant/README.md)) |
+| [`services/`](services/) | Python source of our own services, with tests and Dockerfiles |
+| [`traffic/`](traffic/) | [Artillery](https://www.artillery.io/) load generators for the store and the assistant |
+| [`chaos/`](chaos/) | Chaos Mesh engine, shared chaos Job, scenarios grouped by level, AWS FIS templates |
+| [`scripts/`](scripts/) | `push_images.py`: build, check and push service images to ECR |
 
-Defaults: region `eu-west-1`, Kubernetes 1.36, 2 spot `t3.medium` nodes in public subnets (no NAT gateway).
+## Built with AI
 
-State is stored in S3 bucket `<state-bucket>` (key `infra/terraform.tfstate`) with a lock file.
+This lab was built in pair-programming with [Claude Code](https://claude.com/claude-code), Anthropic's agentic coding tool.
 
-## Deploy monitoring
+- **The author** chose the goals, the architecture and every trade-off (OpenTofu over Terraform, public nodes to cut NAT costs, a mock LLM by default, scenario levels), reviewed each change and ran it on a real EKS cluster.
+- **Claude Code** wrote most of the code, infrastructure and documentation, checked it (unit tests, `tofu plan`, `kustomize build`, `promtool`, local end-to-end runs) and fixed the issues found during practice sessions.
+- **Commits** made with AI help carry a `Co-Authored-By: Claude` trailer, so the history shows the collaboration.
 
-[kube-prometheus-stack](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack)
-in namespace `monitoring`. CRDs go first, so the stack's custom resources can be created.
+The repository conventions the AI follows are in [CLAUDE.md](CLAUDE.md).
 
-```bash
-kubectl kustomize --enable-helm platform/monitoring/crds | kubectl apply --server-side -f -
-kubectl kustomize --enable-helm platform/monitoring | kubectl apply --server-side -f -
-kubectl -n monitoring port-forward svc/kube-prometheus-stack-grafana 3000:80   # open http://localhost:3000
-```
+## Details
 
-Grafana has no login (it is reachable only via port-forward). Open dashboard **Retail Store**.
-
-## Deploy the application
-
-The [Retail Store Sample App](https://github.com/aws-containers/retail-store-sample-app) (pinned release) runs in namespace `retail-store`.
-
-```bash
-kubectl apply -k apps/retail-store
-kubectl -n retail-store get pods
-kubectl -n retail-store port-forward svc/ui 8080:80   # open http://localhost:8080
-```
-
-## Generate traffic
-
-An [Artillery](https://www.artillery.io/) Deployment runs the upstream shopper scenario
-(browse catalog, add to cart, checkout) against `http://ui.retail-store.svc`.
-
-```bash
-kubectl apply -k traffic
-kubectl -n traffic logs -f deploy/load-generator             # live stats every 10 s
-kubectl -n traffic scale deploy/load-generator --replicas=3  # more load
-kubectl delete -k traffic                                    # stop
-```
-
-Load knobs in `traffic/load-generator.yaml`: `replicas` and `arrivalRate` (new users per second, per replica).
-
-## AI shopping assistant (optional)
-
-A Claude-powered assistant (Anthropic SDK, Claude Haiku 4.5) that answers questions using the store catalog as tools.
-
-> [!IMPORTANT]
-> It runs in **mock mode by default: no API key, no cost.** The real Anthropic API is an opt-in overlay.
-
-```bash
-uv run scripts/push_images.py              # build + push images to ECR (once per cluster)
-kubectl apply -k apps/ai-assistant/base
-kubectl apply -k traffic/ai-assistant
-```
-
-Dashboard: **AI Assistant**. Details, real-API mode and costs: [apps/ai-assistant/README.md](apps/ai-assistant/README.md).
-
-## Warning
-
-This repo creates real AWS resources that cost money.
-Always destroy everything when you are done:
-
-```bash
-cd infra && tofu destroy
-```
+- **Cluster defaults:** region `eu-west-1`, Kubernetes 1.36, 2 spot `t3.medium` nodes, public node subnets.
+- **State:** S3 bucket `<state-bucket>`, key `infra/terraform.tfstate`, locked with `use_lockfile`.
+- **Grafana** has no login: it is reachable only through `kubectl port-forward`.
+- **Store UI:** `kubectl -n retail-store port-forward svc/ui 8080:80`, then http://localhost:8080.
+- **More load:** `kubectl -n traffic scale deploy/load-generator --replicas=3`.
