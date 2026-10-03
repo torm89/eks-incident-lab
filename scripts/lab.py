@@ -71,6 +71,8 @@ def external_tool_env() -> dict[str, str]:
 @dataclass
 class Runner:
     dry_run: bool
+    # Quiet: print neither commands nor their output (blind chaos mode must not reveal the scenario).
+    quiet: bool = False
 
     def __post_init__(self) -> None:
         self._env = external_tool_env()
@@ -78,12 +80,13 @@ class Runner:
     def run(self, command: list[str], cwd: Path = REPO_ROOT, stdin: str | None = None,
             capture: bool = False, check: bool = True) -> str:
         """Runs a command; output goes to the terminal unless captured. Interactive prompts work."""
-        print(f"  $ {' '.join(command)}", flush=True)
+        if not self.quiet:
+            print(f"  $ {' '.join(command)}", flush=True)
         if self.dry_run:
             return ""
         executable = shutil.which(command[0], path=self._env["PATH"]) or command[0]
         result = subprocess.run([executable, *command[1:]], cwd=cwd, input=stdin, env=self._env,
-                                capture_output=capture, text=True, encoding="utf-8", errors="replace")
+                                capture_output=capture or self.quiet, text=True, encoding="utf-8", errors="replace")
         if check and result.returncode != 0:
             details = f"\n{result.stderr}" if capture else ""
             raise LabError(f"Command failed ({result.returncode}): {' '.join(command)}{details}")
@@ -248,9 +251,9 @@ def apply_kustomization(runner: Runner, path: str, with_helm: bool = False) -> N
 
 def wait_for_rollouts(runner: Runner, namespace: str) -> None:
     if runner.dry_run:
-        runner.run(["kubectl", "-n", namespace, "rollout", "status", "<each deployment and statefulset>"])
+        runner.run(["kubectl", "-n", namespace, "rollout", "status", "<each deployment, statefulset and daemonset>"])
         return
-    workloads = runner.query(["kubectl", "-n", namespace, "get", "deployments,statefulsets", "-o", "name"]).split()
+    workloads = runner.query(["kubectl", "-n", namespace, "get", "deployments,statefulsets,daemonsets", "-o", "name"]).split()
     for workload in workloads:
         runner.run(["kubectl", "-n", namespace, "rollout", "status", workload, f"--timeout={ROLLOUT_TIMEOUT}"])
 

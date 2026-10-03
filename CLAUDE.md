@@ -55,6 +55,7 @@ This repo is a sandbox for incident-response practice on EKS:
   - `llm-gateway` exposes the same `/chaos/status` and `/chaos/latency` contract as the Retail Store, so AI scenarios reuse `chaos/base`.
 - Synthetic traffic lives in `traffic/` (Kustomize, namespace `traffic`); AI questions in `traffic/ai-assistant/` (apply after `traffic/`). The scenario image tag must match the app release in `apps/retail-store/`.
 - `scripts/lab.py up|down` brings the whole lab up or down (cross-platform: Python, no shell scripts). Keep it in sync when deployment steps change; every step must stay idempotent. External tools run without the uv virtualenv on PATH (the AWS CLI v1 is Python-based).
+- `scripts/chaos.py` injects and recovers scenarios (by name or `--random`, blind). It discovers scenarios from the `chaos/scenarios/level-*` folders: a new scenario needs no script change if it follows the folder conventions. Blind mode must not print anything that reveals the scenario.
 - Python code targets Python >= 3.12 (see `pyproject.toml`).
 - Keep costs low: this is a test cluster. Prefer small instance types and make teardown (`tofu destroy`) easy.
 - Never commit secrets, state files or `.tfvars` with real credentials.

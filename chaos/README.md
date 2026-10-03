@@ -29,6 +29,21 @@ Expected alerts per scenario:
 The SLO alerts are verified by unit tests; the per-scenario mapping is the hypothesis to check during practice.
 
 
+## Quick start: scripts/chaos.py
+
+```bash
+uv run scripts/chaos.py list                         # all scenarios
+uv run scripts/chaos.py inject orders-http-500       # a chosen scenario
+uv run scripts/chaos.py inject --random              # blind: random level 1-2 scenario, name hidden
+uv run scripts/chaos.py inject --random --level 3 --profile <aws-profile>   # blind AWS FIS (costs money)
+uv run scripts/chaos.py reveal                       # which scenario, and how long ago (time to detect)
+uv run scripts/chaos.py recover                      # undo it (the "cheat" button)
+```
+
+Blind mode prints no commands and deletes its chaos Jobs right after they run, so nothing gives the scenario away
+except the symptoms. Chaos Mesh is installed automatically the first time it is needed.
+The commands in each scenario README still work if you prefer doing it by hand.
+
 ## Scenarios
 
 | Scenario | Level | Tool | Setup |

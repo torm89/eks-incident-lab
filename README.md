@@ -107,7 +107,13 @@ waits for every rollout and prints the port-forward commands at the end. Safe to
 Options: `--profile` (AWS profile; without it the `AWS_PROFILE` variable is used), `--no-ai` (skip the assistant, no Docker needed),
 `--yes` (no prompts), `--dry-run` (print the commands only).
 
-Then open Grafana (dashboards **Incident Lab / Retail Store** and **Incident Lab / AI Assistant**) and pick a scenario from the table above:
+Then open Grafana (dashboards **Incident Lab / Retail Store** and **Incident Lab / AI Assistant**) and break something:
+
+```bash
+uv run scripts/chaos.py inject --random   # blind: you find out what broke
+```
+
+or pick a scenario from the table above:
 
 ```bash
 kubectl -n monitoring port-forward svc/kube-prometheus-stack-grafana 3000:80   # http://localhost:3000
@@ -214,7 +220,7 @@ Switch modes while the cluster is **destroyed**. On a running cluster OpenTofu r
 | [`traffic/`](traffic/) | [Artillery](https://www.artillery.io/) load generators for the store and the assistant |
 | [`docs/runbooks/`](docs/runbooks/alerts.md) | What to do when an alert fires |
 | [`chaos/`](chaos/) | Chaos Mesh engine, shared chaos Job, scenarios grouped by level, AWS FIS templates |
-| [`scripts/`](scripts/) | `lab.py` (`up` / `down` for the whole lab), `push_images.py` (service images to ECR), `generate_dashboards.py`, `generate_alerts.py` + `test_alerts.py` (SLOs in `slo_definitions.py`) |
+| [`scripts/`](scripts/) | `lab.py` (`up` / `down` for the whole lab), `chaos.py` (inject / recover / random blind scenarios), `push_images.py` (service images to ECR), `generate_dashboards.py`, `generate_alerts.py` + `test_alerts.py` (SLOs in `slo_definitions.py`) |
 
 ## Built with AI
 
