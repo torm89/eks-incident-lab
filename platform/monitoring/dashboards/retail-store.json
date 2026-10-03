@@ -247,7 +247,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(rate(http_server_requests_seconds_count{namespace=\"$namespace\", uri!~\"/actuator.*\", app_kubernetes_io_name=\"ui\", status=~\"5..\"}[$__rate_interval])) / sum(rate(http_server_requests_seconds_count{namespace=\"$namespace\", uri!~\"/actuator.*\", app_kubernetes_io_name=\"ui\"}[$__rate_interval]))",
+          "expr": "(sum(rate(http_server_requests_seconds_count{namespace=\"$namespace\", uri!~\"/actuator.*\", app_kubernetes_io_name=\"ui\", status=~\"5..\"}[$__rate_interval])) or vector(0)) / sum(rate(http_server_requests_seconds_count{namespace=\"$namespace\", uri!~\"/actuator.*\", app_kubernetes_io_name=\"ui\"}[$__rate_interval]))",
           "legendFormat": "",
           "refId": "A"
         }
@@ -516,7 +516,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "1 - ((sum(rate(http_server_requests_seconds_count{namespace=\"retail-store\", app_kubernetes_io_name=\"ui\", uri!~\"/actuator.*\", status=~\"5..\"}[$__range]))) / (sum(rate(http_server_requests_seconds_count{namespace=\"retail-store\", app_kubernetes_io_name=\"ui\", uri!~\"/actuator.*\"}[$__range])))) / 0.01",
+          "expr": "1 - (((sum(rate(http_server_requests_seconds_count{namespace=\"retail-store\", app_kubernetes_io_name=\"ui\", uri!~\"/actuator.*\", status=~\"5..\"}[$__range])) or vector(0))) / (sum(rate(http_server_requests_seconds_count{namespace=\"retail-store\", app_kubernetes_io_name=\"ui\", uri!~\"/actuator.*\"}[$__range])))) / 0.01",
           "legendFormat": "",
           "refId": "A"
         }
@@ -625,7 +625,9 @@
           "custom": {
             "thresholdsStyle": {
               "mode": "line+area"
-            }
+            },
+            "axisSoftMin": 0,
+            "axisSoftMax": 18.0
           }
         },
         "overrides": []
@@ -762,7 +764,9 @@
           "custom": {
             "thresholdsStyle": {
               "mode": "line+area"
-            }
+            },
+            "axisSoftMin": 0,
+            "axisSoftMax": 0.0625
           }
         },
         "overrides": []
@@ -784,7 +788,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum by (app_kubernetes_io_name) (rate(http_server_requests_seconds_count{namespace=\"$namespace\", uri!~\"/actuator.*\", status=~\"5..\"}[$__rate_interval])) / sum by (app_kubernetes_io_name) (rate(http_server_requests_seconds_count{namespace=\"$namespace\", uri!~\"/actuator.*\"}[$__rate_interval]))",
+          "expr": "(sum by (app_kubernetes_io_name) (rate(http_server_requests_seconds_count{namespace=\"$namespace\", uri!~\"/actuator.*\", status=~\"5..\"}[$__rate_interval])) or sum by (app_kubernetes_io_name) (rate(http_server_requests_seconds_count{namespace=\"$namespace\", uri!~\"/actuator.*\"}[$__rate_interval])) * 0) / sum by (app_kubernetes_io_name) (rate(http_server_requests_seconds_count{namespace=\"$namespace\", uri!~\"/actuator.*\"}[$__rate_interval]))",
           "legendFormat": "{{app_kubernetes_io_name}}",
           "refId": "A"
         },
@@ -793,7 +797,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum by (app_kubernetes_io_name) (rate(gin_requests_total{namespace=\"$namespace\", url!~\"/health.*|/metrics.*\", code=~\"5..\"}[$__rate_interval])) / sum by (app_kubernetes_io_name) (rate(gin_requests_total{namespace=\"$namespace\", url!~\"/health.*|/metrics.*\"}[$__rate_interval]))",
+          "expr": "(sum by (app_kubernetes_io_name) (rate(gin_requests_total{namespace=\"$namespace\", url!~\"/health.*|/metrics.*\", code=~\"5..\"}[$__rate_interval])) or sum by (app_kubernetes_io_name) (rate(gin_requests_total{namespace=\"$namespace\", url!~\"/health.*|/metrics.*\"}[$__rate_interval])) * 0) / sum by (app_kubernetes_io_name) (rate(gin_requests_total{namespace=\"$namespace\", url!~\"/health.*|/metrics.*\"}[$__rate_interval]))",
           "legendFormat": "{{app_kubernetes_io_name}}",
           "refId": "B"
         }
@@ -802,8 +806,8 @@
     {
       "id": 14,
       "type": "timeseries",
-      "title": "Latency p95 by service",
-      "description": "95th percentile per service. Catalog is often the root cause of a slow UI.",
+      "title": "Latency by service",
+      "description": "p95 for the Java services. Catalog (Go) only exposes a summary, so it shows the average (including health checks). Catalog is often the root cause of a slow UI.",
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"
@@ -833,7 +837,9 @@
           "custom": {
             "thresholdsStyle": {
               "mode": "line+area"
-            }
+            },
+            "axisSoftMin": 0,
+            "axisSoftMax": 1.25
           }
         },
         "overrides": []
@@ -856,7 +862,7 @@
             "uid": "${datasource}"
           },
           "expr": "histogram_quantile(0.95, sum by (app_kubernetes_io_name, le) (rate(http_server_requests_seconds_bucket{namespace=\"$namespace\", uri!~\"/actuator.*\"}[$__rate_interval])))",
-          "legendFormat": "{{app_kubernetes_io_name}}",
+          "legendFormat": "{{app_kubernetes_io_name}} p95",
           "refId": "A"
         },
         {
@@ -864,8 +870,8 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "histogram_quantile(0.95, sum by (app_kubernetes_io_name, le) (rate(gin_request_duration_seconds_bucket{namespace=\"$namespace\", url!~\"/health.*|/metrics.*\"}[$__rate_interval])))",
-          "legendFormat": "{{app_kubernetes_io_name}}",
+          "expr": "sum by (app_kubernetes_io_name) (rate(gin_request_duration_seconds_sum{namespace=\"$namespace\"}[$__rate_interval])) / sum by (app_kubernetes_io_name) (rate(gin_request_duration_seconds_count{namespace=\"$namespace\"}[$__rate_interval]))",
+          "legendFormat": "{{app_kubernetes_io_name}} average",
           "refId": "B"
         }
       ]
@@ -1027,7 +1033,9 @@
           "custom": {
             "thresholdsStyle": {
               "mode": "line+area"
-            }
+            },
+            "axisSoftMin": 0,
+            "axisSoftMax": 1.1875
           }
         },
         "overrides": []
@@ -1102,8 +1110,8 @@
     {
       "id": 20,
       "type": "timeseries",
-      "title": "CPU throttling",
-      "description": "Share of CPU periods in which a container hit its CPU limit and had to wait.",
+      "title": "CPU, % of request",
+      "description": "CPU used vs the CPU the pod requested. The pods have no CPU limits (no throttling); above 100% a pod lives on spare node CPU, which disappears when another node fails.",
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"
@@ -1126,14 +1134,16 @@
               },
               {
                 "color": "red",
-                "value": 0.25
+                "value": 1
               }
             ]
           },
           "custom": {
             "thresholdsStyle": {
               "mode": "line+area"
-            }
+            },
+            "axisSoftMin": 0,
+            "axisSoftMax": 1.25
           }
         },
         "overrides": []
@@ -1155,7 +1165,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum by (pod) (rate(container_cpu_cfs_throttled_periods_total{namespace=\"$namespace\", container!=\"\"}[$__rate_interval])) / sum by (pod) (rate(container_cpu_cfs_periods_total{namespace=\"$namespace\", container!=\"\"}[$__rate_interval]))",
+          "expr": "sum by (pod) (rate(container_cpu_usage_seconds_total{namespace=\"$namespace\", container!=\"\"}[$__rate_interval])) / sum by (pod) (kube_pod_container_resource_requests{namespace=\"$namespace\", resource=\"cpu\"})",
           "legendFormat": "{{pod}}",
           "refId": "A"
         }
@@ -1195,7 +1205,9 @@
           "custom": {
             "thresholdsStyle": {
               "mode": "line+area"
-            }
+            },
+            "axisSoftMin": 0,
+            "axisSoftMax": 1.125
           }
         },
         "overrides": []
@@ -1266,7 +1278,9 @@
           "custom": {
             "thresholdsStyle": {
               "mode": "line+area"
-            }
+            },
+            "axisSoftMin": 0,
+            "axisSoftMax": 1.125
           }
         },
         "overrides": []

@@ -53,6 +53,18 @@ tests:
           - labels: '{alertstate="firing", service="retail-store"}'
             value: 1
 
+  - name: No failures at all give an error ratio of 0, not an empty series
+    interval: 15s
+    input_series:
+      - series: 'http_server_requests_seconds_count{namespace="retail-store", app_kubernetes_io_name="ui", uri="/home", status="200"}'
+        values: '0+15x40'   # only successful requests: no 5xx series exists
+    promql_expr_test:
+      - expr: slo:sli_error:ratio_rate5m{slo="store-availability"}
+        eval_time: 5m
+        exp_samples:
+          - labels: 'slo:sli_error:ratio_rate5m{slo="store-availability", service="retail-store"}'
+            value: 0
+
   - name: Slow store pages
     interval: 15s
     input_series:

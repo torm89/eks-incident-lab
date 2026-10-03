@@ -31,6 +31,7 @@ RATE = "[$__rate_interval]"
 GRID_WIDTH = 24
 STAT_HEIGHT = 4
 GRAPH_HEIGHT = 8
+AXIS_HEADROOM = 1.25  # graphs with thresholds show at least 0..125% of the highest threshold
 
 # Threshold steps: (color, from value). The first step starts at minus infinity.
 LOWER_IS_BETTER_RATIO = [("green", None), ("yellow", 0.01), ("red", 0.05)]
@@ -69,7 +70,11 @@ class Panel:
         if self.steps:
             defaults["thresholds"] = thresholds(self.steps)
             if self.kind == "timeseries":
-                defaults["custom"] = {"thresholdsStyle": {"mode": "line+area"}}
+                # Soft axis range up to just above the highest threshold: a healthy all-zero graph stays
+                # readable (Grafana would otherwise pick e.g. 0-100 = 10000%) and the threshold line stays visible.
+                highest_threshold = max(value for _, value in self.steps if value is not None)
+                defaults["custom"] = {"thresholdsStyle": {"mode": "line+area"},
+                                      "axisSoftMin": 0, "axisSoftMax": highest_threshold * AXIS_HEADROOM}
             else:
                 defaults["color"] = {"mode": "thresholds"}
         return {
@@ -205,6 +210,12 @@ def histogram_quantile(quantile: float, bucket_metric: str, selector: str, by: s
     return f"histogram_quantile({quantile}, sum by ({group}) (rate({bucket_metric}{{{selector}}}{RATE})))"
 
 
+def error_ratio_by(counter: str, selector: str, bad_selector: str, by: str) -> str:
+    """Bad / total per group, 0 (not empty) for groups without failures."""
+    total = f"sum by ({by}) (rate({counter}{{{selector}}}{RATE}))"
+    return f"(sum by ({by}) (rate({counter}{{{selector}, {bad_selector}}}{RATE})) or {total} * 0) / {total}"
+
+
 def saturation_panels(namespace: str) -> list[Panel]:
     ns = f'namespace="{namespace}", container!=""'
     return [
@@ -255,7 +266,7 @@ def retail_store() -> dict[str, Any]:
         stat("Traffic", "Requests per second entering the store through the UI.",
              f"sum(rate(http_server_requests_seconds_count{{{ui}}}{RATE}))", "reqps", width=5),
         stat("Errors", "Share of UI requests that end with a 5xx status.",
-             f'sum(rate(http_server_requests_seconds_count{{{ui}, status=~"5.."}}{RATE})) / '
+             f'(sum(rate(http_server_requests_seconds_count{{{ui}, status=~"5.."}}{RATE})) or vector(0)) / '
              f"sum(rate(http_server_requests_seconds_count{{{ui}}}{RATE}))",
              "percentunit", LOWER_IS_BETTER_RATIO, width=5),
         stat("Latency p95", "95% of successful UI requests are faster than this.",
@@ -276,14 +287,14 @@ def retail_store() -> dict[str, Any]:
                       (f"sum by ({service}) (rate(gin_requests_total{{{go}}}{RATE}))", f"{{{{{service}}}}}")),
               "reqps"),
         graph("Error ratio (5xx) by service", "Share of requests that fail, per service. Line: 5%.",
-              targets((f'sum by ({service}) (rate(http_server_requests_seconds_count{{{java}, status=~"5.."}}{RATE})) / '
-                       f"sum by ({service}) (rate(http_server_requests_seconds_count{{{java}}}{RATE}))", f"{{{{{service}}}}}"),
-                      (f'sum by ({service}) (rate(gin_requests_total{{{go}, code=~"5.."}}{RATE})) / '
-                       f"sum by ({service}) (rate(gin_requests_total{{{go}}}{RATE}))", f"{{{{{service}}}}}")),
+              targets((error_ratio_by("http_server_requests_seconds_count", java, 'status=~"5.."', service), f"{{{{{service}}}}}"),
+                      (error_ratio_by("gin_requests_total", go, 'code=~"5.."', service), f"{{{{{service}}}}}")),
               "percentunit", steps=[("green", None), ("red", 0.05)]),
-        graph("Latency p95 by service", "95th percentile per service. Catalog is often the root cause of a slow UI.",
-              targets((histogram_quantile(0.95, "http_server_requests_seconds_bucket", java, by=service), f"{{{{{service}}}}}"),
-                      (histogram_quantile(0.95, "gin_request_duration_seconds_bucket", go, by=service), f"{{{{{service}}}}}")),
+        graph("Latency by service", "p95 for the Java services. Catalog (Go) only exposes a summary, so it shows the average "
+              "(including health checks). Catalog is often the root cause of a slow UI.",
+              targets((histogram_quantile(0.95, "http_server_requests_seconds_bucket", java, by=service), f"{{{{{service}}}}} p95"),
+                      (f"sum by ({service}) (rate(gin_request_duration_seconds_sum{{{ns}}}{RATE})) / "
+                       f"sum by ({service}) (rate(gin_request_duration_seconds_count{{{ns}}}{RATE}))", f"{{{{{service}}}}} average")),
               "s", steps=[("green", None), ("red", 1)]),
         graph("UI latency: successful vs failed", "p50, p95 and p99 by outcome. Fast failures must not hide slow successes.",
               targets(*[(histogram_quantile(q, "http_server_requests_seconds_bucket", ui, by="outcome"), f"p{int(q * 100)} {{{{outcome}}}}")
@@ -293,10 +304,11 @@ def retail_store() -> dict[str, Any]:
 
     saturation = Row("Saturation: pods and nodes", [
         *saturation_panels("$namespace"),
-        graph("CPU throttling", "Share of CPU periods in which a container hit its CPU limit and had to wait.",
-              [target(f'sum by (pod) (rate(container_cpu_cfs_throttled_periods_total{{{ns}, container!=""}}{RATE})) / '
-                      f'sum by (pod) (rate(container_cpu_cfs_periods_total{{{ns}, container!=""}}{RATE}))', "{{pod}}")],
-              "percentunit", steps=[("green", None), ("red", 0.25)], width=8),
+        graph("CPU, % of request", "CPU used vs the CPU the pod requested. The pods have no CPU limits (no throttling); "
+              "above 100% a pod lives on spare node CPU, which disappears when another node fails.",
+              [target(f'sum by (pod) (rate(container_cpu_usage_seconds_total{{{ns}, container!=""}}{RATE})) / '
+                      f'sum by (pod) (kube_pod_container_resource_requests{{{ns}, resource="cpu"}})', "{{pod}}")],
+              "percentunit", steps=[("green", None), ("red", 1)], width=8),
         graph("Node CPU and memory", "Utilization of each worker node. Losing one node puts all load on the other.",
               targets(("1 - avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\"}" + RATE + "))", "CPU {{instance}}"),
                       ("1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes", "memory {{instance}}")),
@@ -333,7 +345,7 @@ def ai_assistant() -> dict[str, Any]:
     golden = Row("Golden signals: the assistant as customers see it", [
         stat("Traffic", "Chat questions per second.", f"sum(rate({chat}{RATE}))", "reqps", width=5),
         stat("Errors", "Share of questions without an answer (LLM errors, step limit). Answers built on failed tools still count as success.",
-             f'sum(rate({chat}{{outcome!="success"}}{RATE})) / sum(rate({chat}{RATE}))',
+             f'(sum(rate({chat}{{outcome!="success"}}{RATE})) or vector(0)) / sum(rate({chat}{RATE}))',
              "percentunit", LOWER_IS_BETTER_RATIO, width=5),
         stat("Latency p95", "95% of answered questions are faster than this (all LLM and tool calls together).",
              histogram_quantile(0.95, "ai_assistant_chat_duration_seconds_bucket", 'outcome="success"'),

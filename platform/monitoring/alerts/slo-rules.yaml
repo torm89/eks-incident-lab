@@ -15,7 +15,7 @@ spec:
         slo: store-availability
         service: retail-store
     - record: slo:sli_error:ratio_rate1m
-      expr: (sum(rate(http_server_requests_seconds_count{namespace="retail-store", app_kubernetes_io_name="ui", uri!~"/actuator.*", status=~"5.."}[1m]))) / (sum(rate(http_server_requests_seconds_count{namespace="retail-store", app_kubernetes_io_name="ui", uri!~"/actuator.*"}[1m])))
+      expr: ((sum(rate(http_server_requests_seconds_count{namespace="retail-store", app_kubernetes_io_name="ui", uri!~"/actuator.*", status=~"5.."}[1m])) or vector(0))) / (sum(rate(http_server_requests_seconds_count{namespace="retail-store", app_kubernetes_io_name="ui", uri!~"/actuator.*"}[1m])))
       labels:
         slo: store-availability
         service: retail-store
@@ -25,7 +25,7 @@ spec:
         slo: store-availability
         service: retail-store
     - record: slo:sli_error:ratio_rate5m
-      expr: (sum(rate(http_server_requests_seconds_count{namespace="retail-store", app_kubernetes_io_name="ui", uri!~"/actuator.*", status=~"5.."}[5m]))) / (sum(rate(http_server_requests_seconds_count{namespace="retail-store", app_kubernetes_io_name="ui", uri!~"/actuator.*"}[5m])))
+      expr: ((sum(rate(http_server_requests_seconds_count{namespace="retail-store", app_kubernetes_io_name="ui", uri!~"/actuator.*", status=~"5.."}[5m])) or vector(0))) / (sum(rate(http_server_requests_seconds_count{namespace="retail-store", app_kubernetes_io_name="ui", uri!~"/actuator.*"}[5m])))
       labels:
         slo: store-availability
         service: retail-store
@@ -35,7 +35,7 @@ spec:
         slo: store-availability
         service: retail-store
     - record: slo:sli_error:ratio_rate30m
-      expr: (sum(rate(http_server_requests_seconds_count{namespace="retail-store", app_kubernetes_io_name="ui", uri!~"/actuator.*", status=~"5.."}[30m]))) / (sum(rate(http_server_requests_seconds_count{namespace="retail-store", app_kubernetes_io_name="ui", uri!~"/actuator.*"}[30m])))
+      expr: ((sum(rate(http_server_requests_seconds_count{namespace="retail-store", app_kubernetes_io_name="ui", uri!~"/actuator.*", status=~"5.."}[30m])) or vector(0))) / (sum(rate(http_server_requests_seconds_count{namespace="retail-store", app_kubernetes_io_name="ui", uri!~"/actuator.*"}[30m])))
       labels:
         slo: store-availability
         service: retail-store
@@ -75,7 +75,7 @@ spec:
         slo: assistant-availability
         service: ai-assistant
     - record: slo:sli_error:ratio_rate1m
-      expr: (sum(rate(ai_assistant_chat_requests_total{namespace="ai-assistant", outcome!="success"}[1m]))) / (sum(rate(ai_assistant_chat_requests_total{namespace="ai-assistant"}[1m])))
+      expr: ((sum(rate(ai_assistant_chat_requests_total{namespace="ai-assistant", outcome!="success"}[1m])) or vector(0))) / (sum(rate(ai_assistant_chat_requests_total{namespace="ai-assistant"}[1m])))
       labels:
         slo: assistant-availability
         service: ai-assistant
@@ -85,7 +85,7 @@ spec:
         slo: assistant-availability
         service: ai-assistant
     - record: slo:sli_error:ratio_rate5m
-      expr: (sum(rate(ai_assistant_chat_requests_total{namespace="ai-assistant", outcome!="success"}[5m]))) / (sum(rate(ai_assistant_chat_requests_total{namespace="ai-assistant"}[5m])))
+      expr: ((sum(rate(ai_assistant_chat_requests_total{namespace="ai-assistant", outcome!="success"}[5m])) or vector(0))) / (sum(rate(ai_assistant_chat_requests_total{namespace="ai-assistant"}[5m])))
       labels:
         slo: assistant-availability
         service: ai-assistant
@@ -95,7 +95,7 @@ spec:
         slo: assistant-availability
         service: ai-assistant
     - record: slo:sli_error:ratio_rate30m
-      expr: (sum(rate(ai_assistant_chat_requests_total{namespace="ai-assistant", outcome!="success"}[30m]))) / (sum(rate(ai_assistant_chat_requests_total{namespace="ai-assistant"}[30m])))
+      expr: ((sum(rate(ai_assistant_chat_requests_total{namespace="ai-assistant", outcome!="success"}[30m])) or vector(0))) / (sum(rate(ai_assistant_chat_requests_total{namespace="ai-assistant"}[30m])))
       labels:
         slo: assistant-availability
         service: ai-assistant
@@ -135,7 +135,7 @@ spec:
         slo: assistant-tool-quality
         service: ai-assistant
     - record: slo:sli_error:ratio_rate1m
-      expr: (sum(rate(ai_assistant_tool_call_duration_seconds_count{namespace="ai-assistant", outcome!="success"}[1m]))) / (sum(rate(ai_assistant_tool_call_duration_seconds_count{namespace="ai-assistant"}[1m])))
+      expr: ((sum(rate(ai_assistant_tool_call_duration_seconds_count{namespace="ai-assistant", outcome!="success"}[1m])) or vector(0))) / (sum(rate(ai_assistant_tool_call_duration_seconds_count{namespace="ai-assistant"}[1m])))
       labels:
         slo: assistant-tool-quality
         service: ai-assistant
@@ -145,7 +145,7 @@ spec:
         slo: assistant-tool-quality
         service: ai-assistant
     - record: slo:sli_error:ratio_rate5m
-      expr: (sum(rate(ai_assistant_tool_call_duration_seconds_count{namespace="ai-assistant", outcome!="success"}[5m]))) / (sum(rate(ai_assistant_tool_call_duration_seconds_count{namespace="ai-assistant"}[5m])))
+      expr: ((sum(rate(ai_assistant_tool_call_duration_seconds_count{namespace="ai-assistant", outcome!="success"}[5m])) or vector(0))) / (sum(rate(ai_assistant_tool_call_duration_seconds_count{namespace="ai-assistant"}[5m])))
       labels:
         slo: assistant-tool-quality
         service: ai-assistant
@@ -155,7 +155,7 @@ spec:
         slo: assistant-tool-quality
         service: ai-assistant
     - record: slo:sli_error:ratio_rate30m
-      expr: (sum(rate(ai_assistant_tool_call_duration_seconds_count{namespace="ai-assistant", outcome!="success"}[30m]))) / (sum(rate(ai_assistant_tool_call_duration_seconds_count{namespace="ai-assistant"}[30m])))
+      expr: ((sum(rate(ai_assistant_tool_call_duration_seconds_count{namespace="ai-assistant", outcome!="success"}[30m])) or vector(0))) / (sum(rate(ai_assistant_tool_call_duration_seconds_count{namespace="ai-assistant"}[30m])))
       labels:
         slo: assistant-tool-quality
         service: ai-assistant

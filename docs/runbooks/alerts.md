@@ -37,7 +37,7 @@ A firing fast burn silences the slow burn of the same SLO in Alertmanager.
 
 **SLO:** 95% of UI requests are faster than 1 s.
 
-1. **Latency p95 by service**: which service got slow? The slowest dependency is usually the cause.
+1. **Latency by service**: which service got slow? The slowest dependency is usually the cause.
 2. **Saturation** row: CPU throttling, memory near the limit, a node full?
 3. Is a dependency unreachable (timeouts)? Check the logs of the slow service.
 

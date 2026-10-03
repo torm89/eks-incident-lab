@@ -22,7 +22,7 @@ kubectl create -k chaos/scenarios/level-1-application/catalog-latency/inject
 
 ## Diagnose
 
-- **Latency p95 by service**: which service got slow first, `ui` or `catalog`? The slowest dependency is usually the cause.
+- **Latency by service**: which service got slow first, `ui` or `catalog`? The slowest dependency is usually the cause.
 - `kubectl -n retail-store exec deploy/ui -- curl -s -o /dev/null -w '%{time_total}\n' http://catalog/catalog/products`
 
 ## Recover
@@ -42,6 +42,6 @@ Slow is harder to spot than broken: nothing is red. The UI shows the symptom, ca
 
 Fix: `DELETE /chaos/latency` or `kubectl -n retail-store rollout restart deploy/catalog`.
 
-Lesson: look at latency per service, not only at the entry point. The UI shows the symptom; **Latency p95 by service** shows the cause.
+Lesson: look at latency per service, not only at the entry point. The UI shows the symptom; **Latency by service** shows the cause.
 
 </details>

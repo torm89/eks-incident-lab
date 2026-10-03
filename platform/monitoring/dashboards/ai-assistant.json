@@ -249,7 +249,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "sum(rate(ai_assistant_chat_requests_total{outcome!=\"success\"}[$__rate_interval])) / sum(rate(ai_assistant_chat_requests_total[$__rate_interval]))",
+          "expr": "(sum(rate(ai_assistant_chat_requests_total{outcome!=\"success\"}[$__rate_interval])) or vector(0)) / sum(rate(ai_assistant_chat_requests_total[$__rate_interval]))",
           "legendFormat": "",
           "refId": "A"
         }
@@ -522,7 +522,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "1 - ((sum(rate(ai_assistant_chat_requests_total{namespace=\"ai-assistant\", outcome!=\"success\"}[$__range]))) / (sum(rate(ai_assistant_chat_requests_total{namespace=\"ai-assistant\"}[$__range])))) / 0.05",
+          "expr": "1 - (((sum(rate(ai_assistant_chat_requests_total{namespace=\"ai-assistant\", outcome!=\"success\"}[$__range])) or vector(0))) / (sum(rate(ai_assistant_chat_requests_total{namespace=\"ai-assistant\"}[$__range])))) / 0.05",
           "legendFormat": "",
           "refId": "A"
         }
@@ -652,7 +652,7 @@
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "expr": "1 - ((sum(rate(ai_assistant_tool_call_duration_seconds_count{namespace=\"ai-assistant\", outcome!=\"success\"}[$__range]))) / (sum(rate(ai_assistant_tool_call_duration_seconds_count{namespace=\"ai-assistant\"}[$__range])))) / 0.05",
+          "expr": "1 - (((sum(rate(ai_assistant_tool_call_duration_seconds_count{namespace=\"ai-assistant\", outcome!=\"success\"}[$__range])) or vector(0))) / (sum(rate(ai_assistant_tool_call_duration_seconds_count{namespace=\"ai-assistant\"}[$__range])))) / 0.05",
           "legendFormat": "",
           "refId": "A"
         }
@@ -696,7 +696,9 @@
           "custom": {
             "thresholdsStyle": {
               "mode": "line+area"
-            }
+            },
+            "axisSoftMin": 0,
+            "axisSoftMax": 18.0
           }
         },
         "overrides": []
@@ -1084,7 +1086,9 @@
           "custom": {
             "thresholdsStyle": {
               "mode": "line+area"
-            }
+            },
+            "axisSoftMin": 0,
+            "axisSoftMax": 1.875
           }
         },
         "overrides": []
@@ -1291,7 +1295,9 @@
           "custom": {
             "thresholdsStyle": {
               "mode": "line+area"
-            }
+            },
+            "axisSoftMin": 0,
+            "axisSoftMax": 6.25
           }
         },
         "overrides": []
@@ -1559,7 +1565,9 @@
           "custom": {
             "thresholdsStyle": {
               "mode": "line+area"
-            }
+            },
+            "axisSoftMin": 0,
+            "axisSoftMax": 1.1875
           }
         },
         "overrides": []

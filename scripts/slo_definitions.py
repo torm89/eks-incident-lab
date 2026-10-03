@@ -70,7 +70,8 @@ class Slo:
 
 def _availability(metric: str, selector: str, bad_selector: str) -> tuple[str, str]:
     total = f"sum(rate({metric}{{{selector}}}[{{window}}]))"
-    bad = f"sum(rate({metric}{{{selector}, {bad_selector}}}[{{window}}]))"
+    # "or vector(0)": with no failures yet the bad series does not exist; the ratio must be 0, not empty.
+    bad = f"(sum(rate({metric}{{{selector}, {bad_selector}}}[{{window}}])) or vector(0))"
     return total, bad
 
 
