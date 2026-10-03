@@ -180,7 +180,7 @@ uv run scripts/generate_alerts.py && uv run scripts/test_alerts.py              
 | Item | Public mode (default) | Private mode |
 |---|---|---|
 | EKS control plane | $0.10 / hour | $0.10 / hour |
-| 2 × `t3.medium` spot nodes | ~$0.03 / hour | ~$0.03 / hour |
+| 3 × `t3.medium` spot nodes | ~$0.045 / hour | ~$0.045 / hour |
 | Traffic between AZs, control plane logs, public IPs, EBS | ~$0.07 / hour | ~$0.06 / hour |
 | NAT gateway | none | ~$0.05 / hour + ~$0.05 / GB (~5 GB of images per session) |
 | **Total per hour** | **~$0.20** | **~$0.25 + image downloads** |
@@ -234,7 +234,7 @@ The repository conventions the AI follows are in [CLAUDE.md](CLAUDE.md).
 
 ## Details
 
-- **Cluster defaults:** region `eu-west-1`, Kubernetes 1.36, 2 spot `t3.medium` nodes, public node subnets.
+- **Cluster defaults:** region `eu-west-1`, Kubernetes 1.36, 3 spot `t3.medium` nodes (a t3.medium runs at most 17 pods), public node subnets.
 - **State:** local `terraform.tfstate` files by default; with `backend.hcl` in your S3 bucket (key `infra/terraform.tfstate`, locked with `use_lockfile`, no DynamoDB table).
 - **Grafana** has no login: it is reachable only through `kubectl port-forward`.
 - **Store UI:** `kubectl -n retail-store port-forward svc/ui 8080:80`, then http://localhost:8080.

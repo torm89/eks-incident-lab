@@ -51,16 +51,20 @@ variable "node_capacity_type" {
 }
 
 variable "node_count" {
-  description = "Minimum, desired and maximum number of worker nodes."
+  description = <<-EOT
+    Minimum, desired and maximum number of worker nodes.
+    3 nodes: a t3.medium runs at most 17 pods, and the lab needs ~30, plus room to lose a node.
+    "desired" only applies when the node group is created; later changes are ignored (scale with the AWS CLI).
+  EOT
   type = object({
     min     = number
     desired = number
     max     = number
   })
   default = {
-    min     = 1
-    desired = 2
-    max     = 3
+    min     = 2
+    desired = 3
+    max     = 4
   }
 }
 

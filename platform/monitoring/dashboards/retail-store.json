@@ -1175,7 +1175,7 @@
       "id": 21,
       "type": "timeseries",
       "title": "Node CPU and memory",
-      "description": "Utilization of each worker node. Losing one node puts all load on the other.",
+      "description": "Utilization of each worker node. Losing a node moves its load to the others.",
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"
@@ -1248,7 +1248,7 @@
       "id": 22,
       "type": "timeseries",
       "title": "Pods per node, % of max",
-      "description": "Running pods vs the node's pod limit (17 on t3.medium). A full node cannot take moved pods.",
+      "description": "Running pods vs the node's pod limit (17 on t3.medium). A full node cannot take pods moved from a lost node.",
       "datasource": {
         "type": "prometheus",
         "uid": "${datasource}"

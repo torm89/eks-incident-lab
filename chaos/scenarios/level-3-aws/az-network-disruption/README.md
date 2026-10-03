@@ -22,7 +22,7 @@ tofu output -raw start_experiment   # prints the start command: run it
 ## Observe
 
 - `kubectl get nodes -w` - when does the node become `NotReady`?
-- **Errors**, **Pods ready** and **Node CPU and memory** (one node stops reporting).
+- **Errors**, **Pods ready** and **Node CPU and memory** (the nodes in that AZ stop reporting).
 - Prometheus itself may run in that AZ: are there gaps in the graphs?
 
 ## Diagnose
@@ -39,7 +39,7 @@ aws fis stop-experiment --region eu-west-1 --id <experiment-id>
 
 ## Verify
 
-Retail Store dashboard: requests flowing, UI error ratio ~0%, orders/min > 0, all pods ready. Two nodes `Ready`.
+Retail Store dashboard: requests flowing, UI error ratio ~0%, orders/min > 0, all pods ready. Three nodes `Ready`.
 
 <details>
 <summary>Solution (open after you tried)</summary>

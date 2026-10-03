@@ -309,11 +309,11 @@ def retail_store() -> dict[str, Any]:
               [target(f'sum by (pod) (rate(container_cpu_usage_seconds_total{{{ns}, container!=""}}{RATE})) / '
                       f'sum by (pod) (kube_pod_container_resource_requests{{{ns}, resource="cpu"}})', "{{pod}}")],
               "percentunit", steps=[("green", None), ("red", 1)], width=8),
-        graph("Node CPU and memory", "Utilization of each worker node. Losing one node puts all load on the other.",
+        graph("Node CPU and memory", "Utilization of each worker node. Losing a node moves its load to the others.",
               targets(("1 - avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\"}" + RATE + "))", "CPU {{instance}}"),
                       ("1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes", "memory {{instance}}")),
               "percentunit", steps=[("green", None), ("red", 0.9)], width=8),
-        graph("Pods per node, % of max", "Running pods vs the node's pod limit (17 on t3.medium). A full node cannot take moved pods.",
+        graph("Pods per node, % of max", "Running pods vs the node's pod limit (17 on t3.medium). A full node cannot take pods moved from a lost node.",
               [target('count by (node) (kube_pod_info{node!=""}) / sum by (node) (kube_node_status_allocatable{resource="pods"})',
                       "{{node}}")],
               "percentunit", steps=[("green", None), ("red", 0.9)], width=8),

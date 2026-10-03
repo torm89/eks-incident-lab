@@ -6,7 +6,7 @@ One spot worker node gets the 2-minute interruption notice, then AWS stops it.
 
 ## Hypothesis
 
-Pods on that node go `Pending` and start on the other node. Single-replica services are down for a few minutes. The node group launches a replacement node.
+Pods on that node go `Pending` and start on the other nodes, if they have room. Single-replica services are down for a few minutes. The node group launches a replacement node.
 
 ## Inject
 
@@ -39,7 +39,7 @@ kubectl get nodes -w
 
 ## Verify
 
-Retail Store dashboard: requests flowing, UI error ratio ~0%, orders/min > 0, all pods ready. Two nodes `Ready`.
+Retail Store dashboard: requests flowing, UI error ratio ~0%, orders/min > 0, all pods ready. Three nodes `Ready`.
 
 <details>
 <summary>Solution (open after you tried)</summary>
