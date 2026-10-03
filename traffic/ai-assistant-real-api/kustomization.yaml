@@ -1,0 +1,16 @@
+# AI questions for the real (paid) Anthropic API: one question every 10 s instead of one per second.
+# With Claude Haiku 4.5 that is about $1-2 per hour. Pair with apps/ai-assistant/overlays/real-api.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../ai-assistant
+
+patches:
+  - target:
+      kind: Deployment
+      name: ai-load-generator
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/args/4
+        value: '{"config":{"phases":[{"duration":86400,"arrivalCount":8640}]}}'

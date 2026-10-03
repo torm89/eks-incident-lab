@@ -186,7 +186,7 @@ uv run scripts/generate_alerts.py && uv run scripts/test_alerts.py              
 | **Total per hour** | **~$0.20** | **~$0.25 + image downloads** |
 | **Typical session** (setup + 1 hour of practice + teardown, ~1.7 hours) | **~$0.35** | **~$0.70** |
 | AI assistant | free (mock LLM) | free (mock LLM) |
-| AI assistant with the real Anthropic API | ~$1-2 / hour (Claude Haiku 4.5) | same |
+| AI assistant with the real Anthropic API | ~$1-2 / hour (Claude Haiku 4.5, with `traffic/ai-assistant-real-api`) | same |
 | AWS FIS experiment | ~$0.10 per action-minute | same |
 
 Estimates for `eu-west-1`. Check AWS Cost Explorer for real numbers.

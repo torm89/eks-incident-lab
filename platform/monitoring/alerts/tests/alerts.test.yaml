@@ -122,6 +122,34 @@ tests:
           - labels: '{}'
             value: 1
 
+  - name: High estimated cost in mock mode does not alert
+    interval: 15s
+    input_series:
+      - series: 'ai_assistant_llm_cost_usd_total{gen_ai_request_model="claude-haiku-4-5"}'
+        values: '0+0.025x120'  # $6 per hour, estimated
+      - series: 'llm_gateway_requests_total{mode="mock", status="200"}'
+        values: '0+30x120'
+    promql_expr_test:
+      - expr: absent(ALERTS{alertname="LlmCostBudgetExceeded", alertstate="firing"})
+        eval_time: 25m
+        exp_samples:
+          - labels: '{alertname="LlmCostBudgetExceeded", alertstate="firing"}'
+            value: 1
+
+  - name: High spend with the real API alerts
+    interval: 15s
+    input_series:
+      - series: 'ai_assistant_llm_cost_usd_total{gen_ai_request_model="claude-haiku-4-5"}'
+        values: '0+0.025x120'  # $6 per hour
+      - series: 'llm_gateway_requests_total{mode="real", status="200"}'
+        values: '0+30x120'
+    promql_expr_test:
+      - expr: count(ALERTS{alertname="LlmCostBudgetExceeded", alertstate="firing"})
+        eval_time: 25m
+        exp_samples:
+          - labels: '{}'
+            value: 1
+
   - name: SDK retries amplify LLM load
     interval: 15s
     input_series:

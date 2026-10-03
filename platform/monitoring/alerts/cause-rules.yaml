@@ -46,13 +46,15 @@ spec:
         runbook_url: https://github.com/torm89/eks-incident-lab/blob/main/docs/runbooks/alerts.md#llmretryamplification
         dashboard: /d/ai-assistant
     - alert: LlmCostBudgetExceeded
-      expr: sum(rate(ai_assistant_llm_cost_usd_total[15m])) * 3600 > 3
+      expr: |-
+        sum(rate(ai_assistant_llm_cost_usd_total[15m])) * 3600 > 3
+        and on () sum(rate(llm_gateway_requests_total{mode="real"}[15m])) > 0
       for: 5m
       labels:
         severity: warning
         service: ai-assistant
       annotations:
         summary: 'LLM spend is {{ $value | humanize }} USD per hour (budget: 3 USD).'
-        description: More traffic, longer prompts or a looping agent. In mock mode this is the cost the real API would have.
+        description: More traffic, longer prompts or a looping agent. Fires only when the gateway uses the real Anthropic API.
         runbook_url: https://github.com/torm89/eks-incident-lab/blob/main/docs/runbooks/alerts.md#llmcostbudgetexceeded
         dashboard: /d/ai-assistant

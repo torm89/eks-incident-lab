@@ -21,10 +21,10 @@ spec:
             - run
             - --target
             - http://ai-assistant.ai-assistant.svc
-            # One question every 10 seconds (8640 per day).
-            # Mock mode: free. Real API with Claude Haiku 4.5: about $1-2 per hour.
+            # One question per second: enough samples for smooth rates and percentiles. Free with the mock LLM.
+            # With the real Anthropic API use traffic/ai-assistant-real-api instead (one question every 10 s).
             - --overrides
-            - '{"config":{"phases":[{"duration":86400,"arrivalCount":8640}]}}'
+            - '{"config":{"phases":[{"duration":86400,"arrivalRate":1}]}}'
             - /scenario/scenario.yml
           resources:
             requests:

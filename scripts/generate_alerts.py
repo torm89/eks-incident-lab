@@ -131,9 +131,11 @@ def cause_rule_groups() -> list[dict[str, Any]]:
         ),
         cause_alert(
             "LlmCostBudgetExceeded", "ai-assistant",
-            f"sum(rate(ai_assistant_llm_cost_usd_total[15m])) * 3600 > {LLM_HOURLY_BUDGET_USD}",
+            # Only real spend counts: the mock LLM costs nothing, however high its estimated cost.
+            f"sum(rate(ai_assistant_llm_cost_usd_total[15m])) * 3600 > {LLM_HOURLY_BUDGET_USD}\n"
+            'and on () sum(rate(llm_gateway_requests_total{mode="real"}[15m])) > 0',
             "5m", "LLM spend is {{ $value | humanize }} USD per hour (budget: " + str(LLM_HOURLY_BUDGET_USD) + " USD).",
-            "More traffic, longer prompts or a looping agent. In mock mode this is the cost the real API would have.",
+            "More traffic, longer prompts or a looping agent. Fires only when the gateway uses the real Anthropic API.",
         ),
     ]}]
 

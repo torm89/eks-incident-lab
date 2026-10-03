@@ -106,7 +106,7 @@ Retries make an overloaded provider worse. See [assistant-availability](#assista
 
 Estimated LLM spend is above the hourly budget (`LLM_HOURLY_BUDGET_USD` in `generate_alerts.py`).
 Check traffic, **Tokens per call** and **Agent steps per answer**. A looping agent or very long prompts multiply the cost.
-In mock mode the number shows what the real API would cost.
+Fires only when the gateway talks to the real Anthropic API; in mock mode the estimated cost is ignored.
 
 ---
 

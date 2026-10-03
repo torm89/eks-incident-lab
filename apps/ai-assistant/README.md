@@ -35,7 +35,7 @@ kubectl -n ai-assistant port-forward svc/ai-assistant 8081:80
 curl -X POST localhost:8081/chat -H "content-type: application/json" -d '{"message": "What gifts do you have under 50 dollars?"}'
 ```
 
-Generate traffic (one question every 10 s):
+Generate traffic (one question per second: free with the mock LLM, and enough samples for smooth graphs):
 
 ```bash
 kubectl apply -k traffic/ai-assistant
@@ -51,25 +51,35 @@ Grafana dashboard: **Incident Lab / AI Assistant**.
    kubectl -n ai-assistant create secret generic anthropic-api-key --from-literal=api-key=<your key>
    ```
 
-2. Switch the gateway to real mode:
+2. Slow the traffic down to one question every 10 s, **before** switching (the default one per second would cost ~10x more):
+
+   ```bash
+   kubectl apply -k traffic/ai-assistant-real-api
+   ```
+
+3. Switch the gateway to real mode:
 
    ```bash
    kubectl apply -k apps/ai-assistant/overlays/real-api
    ```
 
-3. Back to mock mode (free):
+4. Back to mock mode (free), then the normal traffic again:
 
    ```bash
    kubectl apply -k apps/ai-assistant/base
+   kubectl apply -k traffic/ai-assistant
    ```
 
-Cost with Claude Haiku 4.5 ($1 / $5 per million input / output tokens) and the default AI traffic
+Cost with Claude Haiku 4.5 ($1 / $5 per million input / output tokens) and the slow traffic
 (one question every 10 s, two LLM calls per answer): roughly **$1-2 per hour**.
+The alert `LlmCostBudgetExceeded` fires above $3 per hour, only in real mode.
 Watch **LLM cost / hour** on the dashboard and stop the traffic when you are done:
 
 ```bash
-kubectl delete -k traffic/ai-assistant
+kubectl delete -k traffic/ai-assistant-real-api
 ```
+
+In mock mode the **LLM cost / hour** panel shows what the real API *would* cost at the current traffic.
 
 ## Chaos scenarios
 
