@@ -1,6 +1,6 @@
 {
   "uid": "ai-assistant",
-  "title": "AI Assistant",
+  "title": "Incident Lab / AI Assistant",
   "description": "Golden signals, LLM calls (OpenTelemetry GenAI), tokens, cost, tools and gateway of the AI shopping assistant.",
   "tags": [
     "eks-incident-lab"

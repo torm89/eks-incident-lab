@@ -19,6 +19,9 @@ from typing import Any
 
 OUTPUT_DIR = Path(__file__).resolve().parent.parent / "platform" / "monitoring" / "dashboards"
 LAB_TAG = "eks-incident-lab"
+# Common title prefix, so the lab dashboards sit next to each other in the alphabetical list
+# (same "Group / Name" style as the built-in "Kubernetes / ..." dashboards).
+TITLE_PREFIX = "Incident Lab / "
 DATASOURCE = {"type": "prometheus", "uid": "${datasource}"}
 RATE = "[$__rate_interval]"
 GRID_WIDTH = 24
@@ -166,7 +169,7 @@ def dashboard(uid: str, title: str, description: str, namespace: str,
               variables: list[dict[str, Any]], rows: list[Row]) -> dict[str, Any]:
     return {
         "uid": uid,
-        "title": title,
+        "title": TITLE_PREFIX + title,
         "description": description,
         "tags": [LAB_TAG],
         "timezone": "browser",

@@ -41,7 +41,7 @@ Generate traffic (one question every 10 s):
 kubectl apply -k traffic/ai-assistant
 ```
 
-Grafana dashboard: **AI Assistant**.
+Grafana dashboard: **Incident Lab / AI Assistant**.
 
 ## Real Anthropic API (paid)
 

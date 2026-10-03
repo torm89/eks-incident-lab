@@ -125,7 +125,7 @@ uv run scripts/push_images.py
 kubectl apply -k apps/ai-assistant/base
 kubectl apply -k traffic/ai-assistant
 
-# 5. Grafana: http://localhost:3000, dashboards "Retail Store" and "AI Assistant"
+# 5. Grafana: http://localhost:3000, dashboards "Incident Lab / Retail Store" and "Incident Lab / AI Assistant"
 kubectl -n monitoring port-forward svc/kube-prometheus-stack-grafana 3000:80
 ```
 

@@ -1,6 +1,6 @@
 {
   "uid": "retail-store",
-  "title": "Retail Store",
+  "title": "Incident Lab / Retail Store",
   "description": "Golden signals, RED per service, saturation and data stores of the Retail Store Sample App.",
   "tags": [
     "eks-incident-lab"
