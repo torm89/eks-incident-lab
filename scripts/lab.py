@@ -4,10 +4,11 @@
     uv run scripts/lab.py up --no-ai        # without the AI assistant (no Docker needed)
     uv run scripts/lab.py down              # destroy everything, including applied FIS scenarios
     uv run scripts/lab.py up --dry-run      # print the commands only
+    uv run scripts/lab.py up --profile NAME # AWS profile, instead of the AWS_PROFILE variable
 
 Both commands ask before OpenTofu creates or destroys anything, unless --yes is given.
 `up` is safe to run again: every step applies the desired state.
-Needs: backend.hcl (see README, "Local setup") and AWS credentials (AWS_PROFILE).
+Needs: backend.hcl (see README, "Local setup") and AWS credentials (--profile or AWS_PROFILE).
 """
 
 import argparse
@@ -22,6 +23,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import boto3
+from botocore.exceptions import BotoCoreError, NoCredentialsError, ProfileNotFound
 
 import push_images
 
@@ -121,8 +123,17 @@ def _version(text: str) -> tuple[int, ...]:
 def check_aws() -> boto3.Session:
     if not BACKEND_CONFIG.exists():
         raise LabError(f"{BACKEND_CONFIG.name} not found: copy backend.hcl.example and set your state bucket")
-    session = boto3.Session()
-    identity = session.client("sts").get_caller_identity()
+    try:
+        session = boto3.Session()
+        identity = session.client("sts").get_caller_identity()
+    except ProfileNotFound as error:
+        raise LabError(f"{error}. Check the name with: aws configure list-profiles") from error
+    except NoCredentialsError as error:
+        raise LabError("No AWS credentials. Pass --profile <name> or set the AWS_PROFILE variable.") from error
+    except BotoCoreError as error:
+        raise LabError(f"AWS credentials do not work: {error}") from error
+    if session.region_name is None:
+        raise LabError("No AWS region: set it in your AWS profile or in AWS_REGION.")
     print(f"  AWS account {identity['Account']}, profile {session.profile_name}, region {session.region_name}")
     return session
 
@@ -216,7 +227,9 @@ def up(runner: Runner, with_ai: bool, auto_approve: bool) -> None:
     step(3, total, "kubectl access")
     region = tofu_output(runner, "region") if not runner.dry_run else "<region>"
     cluster = tofu_output(runner, "cluster_name") if not runner.dry_run else "<cluster>"
-    runner.run(["aws", "eks", "update-kubeconfig", "--region", region, "--name", cluster])
+    # With --profile in the kubeconfig, kubectl works later in any shell, without AWS_PROFILE.
+    profile = ["--profile", os.environ["AWS_PROFILE"]] if os.environ.get("AWS_PROFILE") else []
+    runner.run(["aws", "eks", "update-kubeconfig", "--region", region, "--name", cluster, *profile])
 
     step(4, total, "Monitoring (Prometheus, Grafana, Alertmanager, alerts)")
     apply_kustomization(runner, "platform/monitoring/crds", with_helm=True)
@@ -294,11 +307,15 @@ def parse_args() -> argparse.Namespace:
     for command_parser in (up_parser, down_parser):
         command_parser.add_argument("--yes", action="store_true", help="do not ask before tofu apply/destroy")
         command_parser.add_argument("--dry-run", action="store_true", help="print the commands without running them")
+        command_parser.add_argument("--profile", help="AWS profile to use (default: the AWS_PROFILE variable)")
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
+    if args.profile:
+        # One place for every tool: boto3, OpenTofu, kubectl and the AWS CLI all read AWS_PROFILE.
+        os.environ["AWS_PROFILE"] = args.profile
     runner = Runner(dry_run=args.dry_run)
     started = time.monotonic()
     try:

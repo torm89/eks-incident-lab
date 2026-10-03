@@ -4,6 +4,10 @@ Run from the repository root after `tofu apply` in infra/, with AWS_PROFILE set:
 
     uv run scripts/push_images.py
 
+With a named AWS profile instead of the AWS_PROFILE variable:
+
+    uv run scripts/push_images.py --profile NAME
+
 Only build, without AWS (no login, no push), e.g. to check that the Dockerfiles still build:
 
     uv run scripts/push_images.py --build-only
@@ -111,8 +115,8 @@ def build_locally(services: list[Service]) -> None:
     print("Done. Images built locally; nothing pushed.")
 
 
-def build_and_push(services: list[Service]) -> None:
-    session = boto3.Session()
+def build_and_push(services: list[Service], profile: str | None = None) -> None:
+    session = boto3.Session(profile_name=profile)
     registry = find_registry(session)
     write_registry_component(registry, services)
     docker_login(session, registry)
@@ -128,6 +132,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Build service images and push them to ECR.")
     parser.add_argument("--build-only", action="store_true",
                         help="build the images locally, without AWS: no login, no push, no image references")
+    parser.add_argument("--profile", help="AWS profile to use (default: the AWS_PROFILE variable)")
     return parser.parse_args()
 
 
@@ -137,7 +142,7 @@ def main() -> None:
     if args.build_only:
         build_locally(services)
     else:
-        build_and_push(services)
+        build_and_push(services, args.profile)
 
 
 if __name__ == "__main__":

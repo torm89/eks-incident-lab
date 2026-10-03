@@ -107,12 +107,13 @@ One command, the same on Windows, Linux and macOS:
 
 ```bash
 cp infra/terraform.tfvars.example infra/terraform.tfvars   # optional: set your IP in api_allowed_cidrs
-uv run scripts/lab.py up        # ~25 min: cluster, monitoring, store, AI assistant (mock LLM, free), traffic
+uv run scripts/lab.py up --profile <your-aws-profile>   # ~25 min: cluster, monitoring, store, AI assistant (mock LLM, free), traffic
 ```
 
 It checks the tools first (OpenTofu >= 1.10, Helm 3, Docker, AWS credentials), asks before `tofu apply`,
 waits for every rollout and prints the port-forward commands at the end. Safe to run again after an error.
-Options: `--no-ai` (skip the assistant, no Docker needed), `--yes` (no prompts), `--dry-run` (print the commands only).
+Options: `--profile` (AWS profile; without it the `AWS_PROFILE` variable is used), `--no-ai` (skip the assistant, no Docker needed),
+`--yes` (no prompts), `--dry-run` (print the commands only).
 
 Then open Grafana (dashboards **Incident Lab / Retail Store** and **Incident Lab / AI Assistant**) and pick a scenario from the table above:
 
@@ -124,7 +125,7 @@ kubectl -n monitoring port-forward svc/kube-prometheus-stack-grafana 3000:80   #
 > This lab creates real AWS resources that cost money. Destroy everything when you are done:
 >
 > ```bash
-> uv run scripts/lab.py down      # also destroys applied level-3 (FIS) scenarios and Kubernetes load balancers
+> uv run scripts/lab.py down --profile <your-aws-profile>   # also destroys applied FIS scenarios and Kubernetes load balancers
 > ```
 
 <details>
