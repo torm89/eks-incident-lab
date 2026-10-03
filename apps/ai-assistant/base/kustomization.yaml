@@ -1,0 +1,21 @@
+# AI shopping assistant (our own code in services/) and the LLM gateway in front of the Anthropic API.
+# The gateway runs in mock mode by default: no API key, no cost.
+# Real API: ../overlays/real-api (see apps/ai-assistant/README.md).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: ai-assistant
+
+resources:
+  - namespace.yaml
+  - llm-gateway.yaml
+  - ai-assistant.yaml
+
+# Tags must match the versions in services/*/pyproject.toml (checked by scripts/push_images.py).
+images:
+  - name: ai-assistant
+    newName: <account-id>.dkr.ecr.eu-west-1.amazonaws.com/torm-eks/ai-assistant
+    newTag: 0.1.0
+  - name: llm-gateway
+    newName: <account-id>.dkr.ecr.eu-west-1.amazonaws.com/torm-eks/llm-gateway
+    newTag: 0.1.0

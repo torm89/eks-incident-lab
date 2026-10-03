@@ -16,6 +16,14 @@ configMapGenerator:
       disableNameSuffixHash: true
       labels:
         grafana_dashboard: "1"
+  - name: ai-assistant-dashboard
+    namespace: monitoring
+    files:
+      - dashboards/ai-assistant.json
+    options:
+      disableNameSuffixHash: true
+      labels:
+        grafana_dashboard: "1"
 
 helmCharts:
   - name: kube-prometheus-stack

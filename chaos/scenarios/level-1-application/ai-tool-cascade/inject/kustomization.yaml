@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../../../base
+
+namePrefix: ai-tool-cascade-inject-
+
+patches:
+  - target:
+      kind: Job
+      name: chaos-request
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/args
+        value: ["--fail", "--silent", "--show-error", "--request", "POST", "http://catalog.retail-store.svc/chaos/latency/6000"]

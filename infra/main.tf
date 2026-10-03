@@ -23,3 +23,10 @@ module "eks" {
 
   api_allowed_cidrs = var.api_allowed_cidrs
 }
+
+module "registry" {
+  source = "./modules/registry"
+
+  name_prefix      = var.environment_name
+  repository_names = var.container_repositories
+}

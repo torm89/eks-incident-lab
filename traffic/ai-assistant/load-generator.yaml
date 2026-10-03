@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-load-generator
+  labels:
+    app.kubernetes.io/name: ai-load-generator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ai-load-generator
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ai-load-generator
+    spec:
+      containers:
+        - name: artillery
+          image: artilleryio/artillery:2.0.34
+          args:
+            - run
+            - --target
+            - http://ai-assistant.ai-assistant.svc
+            # One question every 10 seconds (8640 per day).
+            # Mock mode: free. Real API with Claude Haiku 4.5: about $1-2 per hour.
+            - --overrides
+            - '{"config":{"phases":[{"duration":86400,"arrivalCount":8640}]}}'
+            - /scenario/scenario.yml
+          resources:
+            requests:
+              cpu: 50m
+              memory: 192Mi
+            limits:
+              memory: 384Mi
+          volumeMounts:
+            - name: scenario
+              mountPath: /scenario
+      volumes:
+        - name: scenario
+          configMap:
+            name: ai-scenario

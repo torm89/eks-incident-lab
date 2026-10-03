@@ -69,3 +69,9 @@ variable "api_allowed_cidrs" {
   type        = list(string)
   default     = ["0.0.0.0/0"]
 }
+
+variable "container_repositories" {
+  description = "ECR repositories for our own services (see services/). Worker nodes can pull from them."
+  type        = list(string)
+  default     = ["ai-assistant", "llm-gateway"]
+}

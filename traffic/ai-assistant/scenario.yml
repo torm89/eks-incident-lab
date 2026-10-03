@@ -1,0 +1,21 @@
+# Customers asking the AI shopping assistant questions.
+# The target and the load phase are set in load-generator.yaml.
+config:
+  http:
+    # LLM answers are slow; do not count them as failures too early.
+    timeout: 60
+  variables:
+    question:
+      - "What gifts do you have under 50 dollars?"
+      - "Which products are in the accessories category?"
+      - "Tell me more about your most expensive product."
+      - "What categories of products do you sell?"
+      - "I need a bag for travelling. What do you recommend?"
+
+scenarios:
+  - name: "Ask the assistant"
+    flow:
+      - post:
+          url: "/chat"
+          json:
+            message: "{{ question }}"

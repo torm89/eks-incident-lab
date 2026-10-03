@@ -18,7 +18,11 @@ A sandbox for practicing incident response on Amazon EKS.
 | `infra/modules/network/` | Child module: VPC, subnets, NAT gateway (private mode only) |
 | `infra/modules/eks/`     | Child module: EKS cluster and node group             |
 | `apps/retail-store/`     | Kustomize: EKS Workshop Retail Store Sample App      |
+| `apps/ai-assistant/`     | Kustomize: AI shopping assistant + LLM gateway, see [README](apps/ai-assistant/README.md) |
+| `services/`              | Python source of our own services (ai-assistant, llm-gateway) |
+| `scripts/`               | Helper scripts, e.g. `push_images.py` (build + push to ECR) |
 | `traffic/`               | Kustomize: Artillery load generator for the app      |
+| `traffic/ai-assistant/`  | Kustomize: Artillery questions for the AI assistant  |
 | `platform/monitoring/`   | Kustomize + Helm: Prometheus and Grafana             |
 | `chaos/`                 | Failure injection, see [chaos/README.md](chaos/README.md) |
 
@@ -29,6 +33,7 @@ A sandbox for practicing incident response on Amazon EKS.
 - AWS CLI with the `<aws-profile>` profile configured
 - kubectl
 - Helm 3 (kubectl's built-in kustomize does not work with Helm 4)
+- Docker and [uv](https://docs.astral.sh/uv/) (only for the AI assistant)
 
 ## Network mode: `node_subnet_type`
 
@@ -112,6 +117,21 @@ kubectl delete -k traffic                                    # stop
 ```
 
 Load knobs in `traffic/load-generator.yaml`: `replicas` and `arrivalRate` (new users per second, per replica).
+
+## AI shopping assistant (optional)
+
+A Claude-powered assistant (Anthropic SDK, Claude Haiku 4.5) that answers questions using the store catalog as tools.
+
+> [!IMPORTANT]
+> It runs in **mock mode by default: no API key, no cost.** The real Anthropic API is an opt-in overlay.
+
+```bash
+uv run scripts/push_images.py              # build + push images to ECR (once per cluster)
+kubectl apply -k apps/ai-assistant/base
+kubectl apply -k traffic/ai-assistant
+```
+
+Dashboard: **AI Assistant**. Details, real-API mode and costs: [apps/ai-assistant/README.md](apps/ai-assistant/README.md).
 
 ## Warning
 

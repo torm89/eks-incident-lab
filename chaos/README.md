@@ -16,6 +16,9 @@ Every scenario README has a hidden **Solution** section. Try first, then open it
 |---|---|---|---|
 | [orders-http-500](scenarios/level-1-application/orders-http-500/) | 1 - application | built-in chaos API | none |
 | [catalog-latency](scenarios/level-1-application/catalog-latency/) | 1 - application | built-in chaos API | none |
+| [llm-rate-limit](scenarios/level-1-application/llm-rate-limit/) | 1 - application (AI) | llm-gateway chaos API | AI assistant |
+| [llm-slow](scenarios/level-1-application/llm-slow/) | 1 - application (AI) | llm-gateway chaos API | AI assistant |
+| [ai-tool-cascade](scenarios/level-1-application/ai-tool-cascade/) | 1 - application (AI) | built-in chaos API | AI assistant |
 | [catalog-db-pod-kill](scenarios/level-2-kubernetes/catalog-db-pod-kill/) | 2 - Kubernetes | Chaos Mesh | Chaos Mesh |
 | [checkout-redis-network-loss](scenarios/level-2-kubernetes/checkout-redis-network-loss/) | 2 - Kubernetes | Chaos Mesh | Chaos Mesh |
 | [node-spot-interruption](scenarios/level-3-aws/node-spot-interruption/) | 3 - AWS | AWS FIS | `tofu apply` in the scenario |
@@ -41,6 +44,7 @@ chaos/
 ## Setup per level
 
 **Level 1** needs nothing. The app has a built-in chaos API (`/chaos/status`, `/chaos/latency`, `/chaos/health`).
+Our `llm-gateway` has the same `/chaos/status` and `/chaos/latency` API, so the AI scenarios reuse the same Job. They need the AI assistant (`apps/ai-assistant/README.md`).
 Scenarios use `kubectl create -k`. The Job deletes itself 60 s after it finishes; wait that long before running the same step again.
 
 **Level 2** needs Chaos Mesh, once per cluster (CRDs first):
