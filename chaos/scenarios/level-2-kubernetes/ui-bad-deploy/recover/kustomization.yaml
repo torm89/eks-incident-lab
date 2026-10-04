@@ -1,0 +1,6 @@
+# Re-applies the store as released: a roll forward to the good ui configuration.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../../../../apps/retail-store

@@ -1,0 +1,10 @@
+# A bad release: the whole store is re-applied, the UI with a broken catalog address.
+# Only the ui Deployment changes, so this creates a new ui revision (a real rollout).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../../../../apps/retail-store
+
+patches:
+  - path: ui-catalog-endpoint.yaml

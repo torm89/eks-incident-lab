@@ -25,6 +25,7 @@ Expected alerts per scenario:
 | ai-tool-cascade | `AssistantToolQualityBudgetBurnFast`, `StoreLatencyBudgetBurn*` |
 | catalog-db-pod-kill | `DataStoreNotReady`, `StoreAvailabilityBudgetBurn*` |
 | checkout-redis-network-loss | `StoreLatencyBudgetBurn*` and/or `StoreAvailabilityBudgetBurn*` |
+| ui-bad-deploy | `StoreAvailabilityBudgetBurnFast` |
 | node-spot-interruption, node-terminate, az-network-disruption | built-in `KubeNodeNotReady` / `KubePodNotReady`, plus SLO alerts for the affected services |
 
 The SLO alerts are verified by unit tests; the per-scenario mapping is the hypothesis to check during practice.
@@ -56,6 +57,7 @@ The commands in each scenario README still work if you prefer doing it by hand.
 | [ai-tool-cascade](scenarios/level-1-application/ai-tool-cascade/) | 1 - application (AI) | built-in chaos API | AI assistant |
 | [catalog-db-pod-kill](scenarios/level-2-kubernetes/catalog-db-pod-kill/) | 2 - Kubernetes | Chaos Mesh | Chaos Mesh |
 | [checkout-redis-network-loss](scenarios/level-2-kubernetes/checkout-redis-network-loss/) | 2 - Kubernetes | Chaos Mesh | Chaos Mesh |
+| [ui-bad-deploy](scenarios/level-2-kubernetes/ui-bad-deploy/) | 2 - Kubernetes | `kubectl apply` | none |
 | [node-spot-interruption](scenarios/level-3-aws/node-spot-interruption/) | 3 - AWS | AWS FIS | `tofu apply` in the scenario |
 | [node-terminate](scenarios/level-3-aws/node-terminate/) | 3 - AWS | AWS FIS | `tofu apply` in the scenario |
 | [az-network-disruption](scenarios/level-3-aws/az-network-disruption/) | 3 - AWS | AWS FIS | `tofu apply` in the scenario |
@@ -70,8 +72,8 @@ chaos/
 └── scenarios/
     ├── level-1-application/    built-in chaos API
     │   └── <name>/             README.md, inject/, recover/ (Kustomize)
-    ├── level-2-kubernetes/     Chaos Mesh
-    │   └── <name>/             README.md, inject/ (Kustomize)
+    ├── level-2-kubernetes/     Chaos Mesh, or a changed Kubernetes object
+    │   └── <name>/             README.md, inject/, optional recover/ (Kustomize)
     └── level-3-aws/            AWS FIS
         └── <name>/             README.md, infra/ (OpenTofu root, own state)
 ```
@@ -82,7 +84,10 @@ chaos/
 Our `llm-gateway` has the same `/chaos/status` and `/chaos/latency` API, so the AI scenarios reuse the same Job. They need the AI assistant (`apps/ai-assistant/README.md`).
 Scenarios use `kubectl create -k`. The Job deletes itself 60 s after it finishes; wait that long before running the same step again.
 
-**Level 2** needs Chaos Mesh, once per cluster (CRDs first):
+**Level 2** scenarios with only `inject/` add a Chaos Mesh experiment; recover deletes it.
+Scenarios with `recover/` change existing objects (e.g. a bad release); recover applies the good version back.
+
+Chaos Mesh scenarios need Chaos Mesh, once per cluster (CRDs first):
 
 ```bash
 kubectl apply --server-side -k chaos/chaos-mesh/crds

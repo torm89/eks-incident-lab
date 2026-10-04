@@ -49,6 +49,10 @@ class Scenario:
         return "apps/ai-assistant" in self.readme_header
 
     @property
+    def needs_chaos_mesh(self) -> bool:
+        return "Chaos Mesh" in self.readme_header
+
+    @property
     def readme_header(self) -> str:
         readme = self.path / "README.md"
         return readme.read_text(encoding="utf-8").split("## Hypothesis")[0] if readme.exists() else ""
@@ -176,7 +180,8 @@ def inject(runner: lab.Runner, scenario: Scenario, blind: bool) -> None:
         run_chaos_jobs(runner, scenario.path / "inject", keep_jobs=not blind)
         experiment_id = None
     elif scenario.level == 2:
-        ensure_chaos_mesh(runner)
+        if scenario.needs_chaos_mesh:
+            ensure_chaos_mesh(runner)
         runner.run(["kubectl", "apply", "-k", str(scenario.path / "inject")])
         experiment_id = None
     else:
@@ -200,7 +205,11 @@ def recover(runner: lab.Runner, session: Session) -> None:
         else:
             print("  This scenario has no recover step: fix it the way the README describes.")
     elif scenario.level == 2:
-        runner.run(["kubectl", "delete", "-k", str(scenario.path / "inject"), "--ignore-not-found"])
+        recover_dir = scenario.path / "recover"
+        if recover_dir.is_dir():  # inject changed existing objects: apply the good version back
+            runner.run(["kubectl", "apply", "-k", str(recover_dir)])
+        else:  # inject only added a chaos experiment: delete it
+            runner.run(["kubectl", "delete", "-k", str(scenario.path / "inject"), "--ignore-not-found"])
     else:
         stop_fis_experiment(session.experiment_id)
     SESSION_FILE.unlink(missing_ok=True)

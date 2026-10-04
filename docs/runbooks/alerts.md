@@ -31,7 +31,7 @@ A firing fast burn silences the slow burn of the same SLO in Alertmanager.
 
 **Usual causes:** a failing backend (orders, carts, catalog), a data store down, a bad rollout.
 **Fix:** restart or roll back the failing service (`kubectl rollout restart` / `kubectl rollout undo`), fix its dependency.
-**Practice:** [orders-http-500](../../chaos/scenarios/level-1-application/orders-http-500/), [catalog-db-pod-kill](../../chaos/scenarios/level-2-kubernetes/catalog-db-pod-kill/).
+**Practice:** [orders-http-500](../../chaos/scenarios/level-1-application/orders-http-500/), [catalog-db-pod-kill](../../chaos/scenarios/level-2-kubernetes/catalog-db-pod-kill/), [ui-bad-deploy](../../chaos/scenarios/level-2-kubernetes/ui-bad-deploy/).
 
 ### store-latency
 

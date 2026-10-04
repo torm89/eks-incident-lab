@@ -1,0 +1,14 @@
+# Overrides the catalog address from the ui ConfigMap with a host name that does not exist.
+# The UI starts and passes its readiness probe; every page that needs the catalog fails.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ui
+spec:
+  template:
+    spec:
+      containers:
+        - name: ui
+          env:
+            - name: RETAIL_UI_ENDPOINTS_CATALOG
+              value: http://catalog-api
