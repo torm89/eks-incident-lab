@@ -26,10 +26,15 @@ Still to build:
   results (Artillery Prometheus publisher) or add blackbox probes, and base the store SLOs on them.
 - **Logs in Grafana** (Loki + Alloy): diagnose without `kubectl logs`.
 - **Traces** (Tempo): the app already emits OpenTelemetry; follow one request UI → checkout → orders → LLM.
-- **Notifications**: Slack or Discord receiver in Alertmanager (webhook in a Secret, never in the repo).
+- **Notifications**: Slack or Discord receiver in Alertmanager (webhook in a Secret, never in the repo). Include a dead man's switch
+  for the `Watchdog` alert: in `az-network-disruption` Prometheus went blind with its AZ and nothing fired.
+- **Monitoring across AZs**: 2 Prometheus replicas with anti-affinity across zones, so one AZ failure does not blind it.
 
 ## Platform and repository
 
+- **Orders cannot publish to RabbitMQ**: the upstream `orders-rabbitmq` Secret is empty, so orders logs
+  `ACCESS_REFUSED` for the `guest` user (allowed only from localhost) about twice a second. Orders still work,
+  but the noise hides real errors in the logs. Set credentials in a patch, or turn messaging off.
 - **CI on GitHub Actions**: `pytest`, `tofu fmt`/`validate`, `kustomize build`, `promtool` alert tests, and a check that generated dashboards and alerts are up to date.
 - **Grafana screenshot or GIF** in the README, taken during an incident.
 - **VPC CNI prefix delegation**: up to 110 pods per node instead of 17 on t3.medium (alternative to more nodes).

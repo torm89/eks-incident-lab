@@ -6,7 +6,9 @@ The worker node subnets in `eu-west-1a` lose all network traffic for 5 minutes. 
 
 ## Hypothesis
 
-The node in that AZ becomes `NotReady`. Its pods are unreachable, but Kubernetes waits about 5 minutes before moving them, so the outage lasts about as long as the failure.
+The nodes in that AZ (often 2 of the 3) become `NotReady` within a minute. Their pods are unreachable, but Kubernetes
+waits about 5 minutes before moving them, so the outage lasts about as long as the failure, and ends by itself.
+If Prometheus runs in that AZ, the monitoring goes blind at the same moment: the store is down and no alert fires.
 
 ## Inject
 
@@ -21,9 +23,10 @@ tofu output -raw start_experiment   # prints the start command: run it
 
 ## Observe
 
-- `kubectl get nodes -w` - when does the node become `NotReady`?
-- **Errors**, **Pods ready** and **Node CPU and memory** (the nodes in that AZ stop reporting).
-- Prometheus itself may run in that AZ: are there gaps in the graphs?
+- `kubectl get nodes -w` - when do the nodes become `NotReady`?
+- Where does Prometheus run? `kubectl -n monitoring get pods -o wide`. Which AZ is that node in?
+- The customers' view: `kubectl -n traffic logs deploy/load-generator --tail=40` (if it runs outside that AZ).
+- **Errors** and **Traffic** on the dashboard: gaps, or real values? Did any alert fire?
 
 ## Diagnose
 
@@ -44,9 +47,18 @@ Retail Store dashboard: requests flowing, UI error ratio ~0%, orders/min > 0, al
 <details>
 <summary>Solution (open after you tried)</summary>
 
-The node gets the `node.kubernetes.io/unreachable` taint. Pods tolerate it for 300 s by default, so they are not moved before the disruption ends.
+The nodes get the `node.kubernetes.io/unreachable` taint. Pods tolerate it for 300 s by default, so they are not moved
+before the disruption ends. The UI in the healthy AZ cannot reach catalog, carts and orders: customers get timeouts and
+500s for the whole disruption, then everything recovers at once. Data stores in the healthy AZ keep their data.
 
-Lessons: spread replicas across AZs (topology spread constraints), shorter tolerations for critical pods.
+When Prometheus and kube-state-metrics run in the cut-off AZ, they scrape only the targets next to them: the store's
+metrics are **missing**, not bad, so no SLO alert and no `StoreTrafficLost` fires. The dashboards show a gap, at best.
+The `Watchdog` alert exists for this: an external receiver that pages when Watchdog stops arriving
+(a dead man's switch). The lab's Alertmanager has no receivers, so nobody notices.
+
+Lessons: spread replicas across AZs (topology spread constraints), shorter tolerations for critical pods,
+and monitoring that does not share the failure domain of what it watches (2 Prometheus replicas in different AZs,
+or an external dead man's switch).
 
 Cleanup when done practicing: `tofu destroy` in `infra/`.
 

@@ -20,6 +20,7 @@ import os
 import random
 import re
 import sys
+import time
 import uuid
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
@@ -27,6 +28,7 @@ from pathlib import Path
 
 import boto3
 import yaml
+from botocore.exceptions import ClientError
 
 import lab
 
@@ -36,6 +38,9 @@ CHAOS_JOB_NAMESPACE = "retail-store"  # chaos/base runs its Jobs here
 CHAOS_MESH_CRD = "podchaos.chaos-mesh.org"
 JOB_TIMEOUT = "90s"
 DEFAULT_RANDOM_LEVELS = (1, 2)  # level 3 costs money and takes nodes away: only on request
+# A new IAM role takes a few seconds to reach FIS; on the first run after `tofu apply` the start fails until then.
+FIS_ROLE_PROPAGATION_ATTEMPTS = 6
+FIS_ROLE_PROPAGATION_DELAY_SECONDS = 10
 
 
 @dataclass(frozen=True)
@@ -69,6 +74,7 @@ class Session:
     injected_at: str
     blind: bool
     experiment_id: str | None = None
+    aws_profile: str | None = None  # level 3: recover stops the experiment with the same profile
 
 
 # ---------------------------------------------------------------- scenarios
@@ -159,7 +165,23 @@ def start_fis_experiment(runner: lab.Runner, scenario: Scenario) -> str:
     lab.tofu_init(runner, infra)
     lab.tofu_apply_or_destroy(runner, infra, "apply", auto_approve=True)  # template + IAM role only: free
     template_id = runner.query(["tofu", "output", "-raw", "experiment_template_id"], cwd=infra).strip()
-    experiment = boto3.client("fis").start_experiment(experimentTemplateId=template_id, clientToken=str(uuid.uuid4()))
+    return start_experiment_when_role_ready(template_id)
+
+
+def start_experiment_when_role_ready(template_id: str) -> str:
+    fis = boto3.client("fis")
+    for _ in range(FIS_ROLE_PROPAGATION_ATTEMPTS - 1):
+        try:
+            return start_experiment(fis, template_id)
+        except ClientError as error:
+            if "Unable to assume role" not in error.response["Error"]["Message"]:
+                raise
+            time.sleep(FIS_ROLE_PROPAGATION_DELAY_SECONDS)
+    return start_experiment(fis, template_id)
+
+
+def start_experiment(fis, template_id: str) -> str:
+    experiment = fis.start_experiment(experimentTemplateId=template_id, clientToken=str(uuid.uuid4()))
     return experiment["experiment"]["id"]
 
 
@@ -187,7 +209,8 @@ def inject(runner: lab.Runner, scenario: Scenario, blind: bool) -> None:
     else:
         experiment_id = start_fis_experiment(runner, scenario)
     now = datetime.now(timezone.utc)
-    save_session(Session(scenario.name, scenario.level, now.isoformat(timespec="seconds"), blind, experiment_id))
+    save_session(Session(scenario.name, scenario.level, now.isoformat(timespec="seconds"), blind, experiment_id,
+                         os.environ.get("AWS_PROFILE")))
     local_time = now.astimezone().strftime("%H:%M:%S")
     if blind:
         print(f"\nA random failure was injected at {local_time}. Find it: dashboards, alerts, kubectl, logs.")
@@ -233,17 +256,21 @@ def list_scenarios() -> None:
 
 
 def parse_args() -> argparse.Namespace:
+    profile_help = "AWS profile (default: the AWS_PROFILE variable); needed for level 3"
     parser = argparse.ArgumentParser(description="Inject and recover chaos scenarios of the eks-incident-lab.")
-    parser.add_argument("--profile", help="AWS profile (default: the AWS_PROFILE variable); needed for level 3")
+    parser.add_argument("--profile", help=profile_help)
+    # Also accepted after the command (inject ... --profile x); SUPPRESS keeps a value given before it.
+    profile_option = argparse.ArgumentParser(add_help=False)
+    profile_option.add_argument("--profile", default=argparse.SUPPRESS, help=profile_help)
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("list", help="list all scenarios")
-    inject_parser = commands.add_parser("inject", help="inject a scenario")
+    inject_parser = commands.add_parser("inject", help="inject a scenario", parents=[profile_option])
     target = inject_parser.add_mutually_exclusive_group(required=True)
     target.add_argument("scenario", nargs="?", help="scenario name, see list")
     target.add_argument("--random", action="store_true", help="pick a random scenario and do not tell which (blind mode)")
     inject_parser.add_argument("--level", type=int, action="append", choices=(1, 2, 3),
                                help=f"with --random: allowed levels, repeatable (default: {', '.join(map(str, DEFAULT_RANDOM_LEVELS))})")
-    commands.add_parser("recover", help="undo the current scenario")
+    commands.add_parser("recover", help="undo the current scenario", parents=[profile_option])
     commands.add_parser("reveal", help="show the current scenario and the time since injection")
     return parser.parse_args()
 
@@ -264,7 +291,10 @@ def main() -> None:
             scenario = pick_random(runner, levels) if blind else find_scenario(args.scenario)
             inject(runner, scenario, blind)
         elif args.command == "recover":
-            recover(lab.Runner(dry_run=False), load_session())
+            session = load_session()
+            if session.aws_profile and not args.profile:
+                os.environ["AWS_PROFILE"] = session.aws_profile
+            recover(lab.Runner(dry_run=False), session)
         else:
             reveal(load_session())
     except lab.LabError as error:

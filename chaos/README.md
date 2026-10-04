@@ -30,7 +30,9 @@ Expected alerts per scenario:
 | catalog-network-policy | `AssistantToolQualityBudgetBurnFast`; after a UI restart `StoreTrafficLost` (old connections keep the store alive until then) |
 | traffic-spike | `PodReadinessFlapping` (the SLOs stay green: the UI cannot see requests queued in front of it) |
 | carts-oom | `StoreAvailabilityBudgetBurnFast` (~1 min), `StoreTrafficLost`, later built-in `KubePodCrashLooping` / `KubeDeploymentRolloutStuck` |
-| node-spot-interruption, node-terminate, az-network-disruption | built-in `KubeNodeNotReady` / `KubePodNotReady`, plus SLO alerts for the affected services |
+| node-spot-interruption | `StoreAvailabilityBudgetBurnFast`, `StoreCheckoutBudgetBurnFast`, `AssistantToolQualityBudgetBurnFast` (data stores restart empty) |
+| node-terminate | `StoreAvailabilityBudgetBurnFast`, `StoreCheckoutBudgetBurnFast`, `DataStoreNotReady` |
+| az-network-disruption | none, if Prometheus runs in the cut-off AZ (it goes blind); otherwise `StoreAvailabilityBudgetBurnFast` |
 
 The SLO alerts are verified by unit tests; the per-scenario mapping is the hypothesis to check during practice.
 
