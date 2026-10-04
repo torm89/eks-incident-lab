@@ -21,6 +21,7 @@ from slo_definitions import (
     RECORDED_WINDOWS,
     SECONDS_PER_WINDOW,
     SLOS,
+    STORE_UI,
     BurnRateAlert,
     Slo,
 )
@@ -28,6 +29,10 @@ from slo_definitions import (
 OUTPUT_DIR = Path(__file__).resolve().parent.parent / "platform" / "monitoring" / "alerts"
 RUNBOOK_URL = "https://github.com/torm89/eks-incident-lab/blob/main/docs/runbooks/alerts.md"
 LLM_HOURLY_BUDGET_USD = 3
+# The store load generator sends about 12-18 UI requests/s. Far below that, customers cannot reach the UI.
+MIN_STORE_UI_REQUESTS_PER_SECOND = 2
+# A pod that goes ready / not ready this often in 10 minutes is overloaded or stuck on a dependency.
+READINESS_FLAPS_IN_10M = 4
 DATA_STORE_PODS = ".*(mysql|postgresql|redis|rabbitmq|dynamodb).*"
 APP_NAMESPACES = "retail-store|ai-assistant"
 
@@ -115,6 +120,24 @@ def cause_rule_groups() -> list[dict[str, Any]]:
             f'max by (namespace, pod) (kube_pod_status_ready{{namespace="retail-store", condition="true", pod=~"{DATA_STORE_PODS}"}}) == 0',
             "1m", "Data store pod {{ $labels.pod }} is not ready.",
             "A database, cache or queue of the store is down. Services that depend on it fail or lose data.",
+        ),
+        cause_alert(
+            "StoreTrafficLost", "retail-store",
+            # "or vector(0)": an unreachable UI has no request series at all.
+            f"(sum(rate(http_server_requests_seconds_count{{{STORE_UI}}}[2m])) or vector(0)) < {MIN_STORE_UI_REQUESTS_PER_SECOND}\n"
+            'and on () sum(kube_deployment_status_replicas_available{namespace="traffic", deployment="load-generator"}) > 0',
+            "2m", "The store UI receives {{ $value | humanize }} requests/s while the load generator is running.",
+            "Requests do not reach the UI (pod not ready, no Service endpoints, network) or the UI is too slow to accept them. "
+            "The SLOs are blind here: the UI cannot count requests that never arrive.",
+        ),
+        cause_alert(
+            "PodReadinessFlapping", "{{ $labels.namespace }}",
+            f'changes(kube_pod_status_ready{{namespace=~"{APP_NAMESPACES}", condition="true"}}[10m]) >= {READINESS_FLAPS_IN_10M}\n'
+            # Only pods that still exist: a deleted pod keeps its flapping history for 10 minutes.
+            f'and on (namespace, pod) kube_pod_status_ready{{namespace=~"{APP_NAMESPACES}", condition="true"}}',
+            "1m", "Pod {{ $labels.pod }} changed its readiness {{ $value }} times in 10 minutes.",
+            "Its readiness probe times out now and then: the pod is overloaded or waits on a slow dependency. "
+            "While it is not ready it gets no traffic, and its own metrics miss the requests that time out in front of it.",
         ),
         cause_alert(
             "PodMemoryNearLimit", "{{ $labels.namespace }}",

@@ -39,6 +39,89 @@ tests:
           - labels: '{alertname="StoreAvailabilityBudgetBurnFast", alertstate="firing"}'
             value: 1
 
+  - name: A broken checkout pages, although the store-wide error ratio stays low
+    interval: 15s
+    input_series:
+      - series: 'http_server_requests_seconds_count{namespace="retail-store", app_kubernetes_io_name="ui", uri="/catalog/{id}", status="200"}'
+        values: '0+240x80'  # 16 browsing requests/s
+      - series: 'http_server_requests_seconds_count{namespace="retail-store", app_kubernetes_io_name="ui", uri="/checkout", status="200"}'
+        values: '0+30x80'   # 2 checkout steps/s that work
+      - series: 'http_server_requests_seconds_count{namespace="retail-store", app_kubernetes_io_name="ui", uri="/checkout/payment", status="500"}'
+        values: '0+10x80'   # 0.67 payments/s, all failing: 4% of the store, 25% of the checkout
+    promql_expr_test:
+      - expr: count(ALERTS{alertname="StoreCheckoutBudgetBurnFast", alertstate="firing", severity="critical"})
+        eval_time: 10m
+        exp_samples:
+          - labels: '{}'
+            value: 1
+      - expr: absent(ALERTS{alertname=~"StoreAvailabilityBudgetBurn.*", alertstate="firing"})
+        eval_time: 10m
+        exp_samples:
+          - labels: '{alertstate="firing"}'
+            value: 1
+
+  - name: An unreachable UI is caught although the SLOs see no requests
+    interval: 15s
+    input_series:
+      - series: 'http_server_requests_seconds_count{namespace="retail-store", app_kubernetes_io_name="ui", uri="/home", status="200"}'
+        values: '0+225x20 _x40'  # 15 requests/s, then the UI is gone (no samples)
+      - series: 'kube_deployment_status_replicas_available{namespace="traffic", deployment="load-generator"}'
+        values: '1x60'
+    promql_expr_test:
+      - expr: count(ALERTS{alertname="StoreTrafficLost", alertstate="firing", severity="warning"})
+        eval_time: 14m
+        exp_samples:
+          - labels: '{}'
+            value: 1
+
+  - name: No traffic alert when the load generator is stopped
+    interval: 15s
+    input_series:
+      - series: 'kube_deployment_status_replicas_available{namespace="traffic", deployment="load-generator"}'
+        values: '0x60'
+    promql_expr_test:
+      - expr: absent(ALERTS{alertname="StoreTrafficLost"})
+        eval_time: 10m
+        exp_samples:
+          - labels: '{alertname="StoreTrafficLost"}'
+            value: 1
+
+  - name: A pod that keeps dropping out of its Service
+    interval: 15s
+    input_series:
+      - series: 'kube_pod_status_ready{namespace="retail-store", condition="true", pod="ui-1"}'
+        values: '1x8 0x4 1x8 0x4 1x8 0x4 1x8'  # not ready for 1 minute, three times
+    promql_expr_test:
+      - expr: count(ALERTS{alertname="PodReadinessFlapping", alertstate="firing", pod="ui-1"})
+        eval_time: 9m
+        exp_samples:
+          - labels: '{}'
+            value: 1
+
+  - name: A deleted pod stops alerting, although its flapping is still in the window
+    interval: 15s
+    input_series:
+      - series: 'kube_pod_status_ready{namespace="retail-store", condition="true", pod="ui-1"}'
+        values: '1x4 0x4 1x4 0x4 1x4 0x4 1x4 stale'  # deleted after 9 minutes
+    promql_expr_test:
+      - expr: absent(ALERTS{alertname="PodReadinessFlapping", alertstate="firing"})
+        eval_time: 10m
+        exp_samples:
+          - labels: '{alertname="PodReadinessFlapping", alertstate="firing"}'
+            value: 1
+
+  - name: A single restart is not flapping
+    interval: 15s
+    input_series:
+      - series: 'kube_pod_status_ready{namespace="retail-store", condition="true", pod="ui-1"}'
+        values: '1x8 0x4 1x40'
+    promql_expr_test:
+      - expr: absent(ALERTS{alertname="PodReadinessFlapping"})
+        eval_time: 10m
+        exp_samples:
+          - labels: '{alertname="PodReadinessFlapping"}'
+            value: 1
+
   - name: Errors within the error budget stay quiet
     interval: 15s
     input_series:

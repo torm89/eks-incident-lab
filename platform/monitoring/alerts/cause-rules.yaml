@@ -19,6 +19,32 @@ spec:
         description: A database, cache or queue of the store is down. Services that depend on it fail or lose data.
         runbook_url: https://github.com/torm89/eks-incident-lab/blob/main/docs/runbooks/alerts.md#datastorenotready
         dashboard: /d/retail-store
+    - alert: StoreTrafficLost
+      expr: |-
+        (sum(rate(http_server_requests_seconds_count{namespace="retail-store", app_kubernetes_io_name="ui", uri!~"/actuator.*"}[2m])) or vector(0)) < 2
+        and on () sum(kube_deployment_status_replicas_available{namespace="traffic", deployment="load-generator"}) > 0
+      for: 2m
+      labels:
+        severity: warning
+        service: retail-store
+      annotations:
+        summary: The store UI receives {{ $value | humanize }} requests/s while the load generator is running.
+        description: 'Requests do not reach the UI (pod not ready, no Service endpoints, network) or the UI is too slow to accept them. The SLOs are blind here: the UI cannot count requests that never arrive.'
+        runbook_url: https://github.com/torm89/eks-incident-lab/blob/main/docs/runbooks/alerts.md#storetrafficlost
+        dashboard: /d/retail-store
+    - alert: PodReadinessFlapping
+      expr: |-
+        changes(kube_pod_status_ready{namespace=~"retail-store|ai-assistant", condition="true"}[10m]) >= 4
+        and on (namespace, pod) kube_pod_status_ready{namespace=~"retail-store|ai-assistant", condition="true"}
+      for: 1m
+      labels:
+        severity: warning
+        service: '{{ $labels.namespace }}'
+      annotations:
+        summary: Pod {{ $labels.pod }} changed its readiness {{ $value }} times in 10 minutes.
+        description: 'Its readiness probe times out now and then: the pod is overloaded or waits on a slow dependency. While it is not ready it gets no traffic, and its own metrics miss the requests that time out in front of it.'
+        runbook_url: https://github.com/torm89/eks-incident-lab/blob/main/docs/runbooks/alerts.md#podreadinessflapping
+        dashboard: /d/{{ $labels.namespace }}
     - alert: PodMemoryNearLimit
       expr: |-
         sum by (namespace, pod) (container_memory_working_set_bytes{namespace=~"retail-store|ai-assistant", container!=""})

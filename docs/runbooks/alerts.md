@@ -31,7 +31,21 @@ A firing fast burn silences the slow burn of the same SLO in Alertmanager.
 
 **Usual causes:** a failing backend (orders, carts, catalog), a data store down, a bad rollout.
 **Fix:** restart or roll back the failing service (`kubectl rollout restart` / `kubectl rollout undo`), fix its dependency.
-**Practice:** [orders-http-500](../../chaos/scenarios/level-1-application/orders-http-500/), [catalog-db-pod-kill](../../chaos/scenarios/level-2-kubernetes/catalog-db-pod-kill/), [ui-bad-deploy](../../chaos/scenarios/level-2-kubernetes/ui-bad-deploy/).
+**Practice:** [catalog-db-pod-kill](../../chaos/scenarios/level-2-kubernetes/catalog-db-pod-kill/), [ui-bad-deploy](../../chaos/scenarios/level-2-kubernetes/ui-bad-deploy/).
+
+### store-checkout
+
+**SLO:** 99% of checkout requests (`/checkout*` in the UI) end without a 5xx status.
+
+Checkout is a few % of all requests: it can be completely broken while the store-wide error ratio looks fine.
+
+1. **Orders / min**: does it drop to 0?
+2. **Error ratio (5xx) by service** and the load generator logs: which checkout step fails (`delivery`, `payment`)?
+3. Logs of orders and checkout: `kubectl -n retail-store logs deploy/orders --tail=100`.
+
+**Usual causes:** orders or checkout failing, their data stores (PostgreSQL, Redis, RabbitMQ) down.
+**Fix:** as for store-availability, on the service behind the failing step.
+**Practice:** [orders-http-500](../../chaos/scenarios/level-1-application/orders-http-500/), [checkout-redis-network-loss](../../chaos/scenarios/level-2-kubernetes/checkout-redis-network-loss/).
 
 ### store-latency
 
@@ -90,7 +104,25 @@ This catches a silent failure: the assistant still answers with HTTP 200, but th
 A database, cache or queue pod of the store is not ready for over 1 minute.
 Check `kubectl -n retail-store describe pod <pod>` and its logs. Data stores use `emptyDir`: after a restart they are **empty**,
 and the services that seed data at startup (catalog) must be restarted.
-**Practice:** [catalog-db-pod-kill](../../chaos/scenarios/level-2-kubernetes/catalog-db-pod-kill/).
+A data store that is replaced quickly never trips this alert, but can still come back empty: see
+[catalog-db-pod-kill](../../chaos/scenarios/level-2-kubernetes/catalog-db-pod-kill/).
+
+### StoreTrafficLost
+
+The store UI gets fewer than 2 requests/s while the load generator is running (normally about 12-18/s).
+Customers are trying, but their requests do not arrive: the SLOs cannot see this, because the UI only counts requests it receives.
+Check `kubectl -n retail-store get pods,endpoints ui` (not ready? no endpoints?) and the load generator: `kubectl -n traffic logs deploy/load-generator --tail=20`
+(socket timeouts, connection refused). A UI stuck waiting for a slow dependency also fails its readiness probe and drops out.
+**Practice:** [catalog-latency](../../chaos/scenarios/level-1-application/catalog-latency/), [ai-tool-cascade](../../chaos/scenarios/level-1-application/ai-tool-cascade/).
+
+### PodReadinessFlapping
+
+A pod changed between ready and not ready at least 4 times in 10 minutes. Its readiness probe times out now and then:
+the pod is overloaded or waits on a slow dependency. While it is not ready, it gets no traffic.
+Check **CPU by pod**, `kubectl top pods`, `kubectl describe pod <pod>` (events: `Readiness probe failed`) and its dependencies' latency.
+Server-side metrics of that pod can look healthy: requests queued in front of it are not measured.
+**Fix:** more replicas (load), or fix the slow dependency.
+**Practice:** [traffic-spike](../../chaos/scenarios/level-2-kubernetes/traffic-spike/), [catalog-latency](../../chaos/scenarios/level-1-application/catalog-latency/).
 
 ### PodMemoryNearLimit
 

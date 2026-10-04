@@ -1,4 +1,4 @@
-# A marketing campaign: 10x more customers. One load generator with a 10x arrival rate
+# A marketing campaign: 30x more customers (at 10x the store still copes). One load generator with a 30x arrival rate
 # (more replicas would need room on the nodes and give the scenario away while Pending).
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
@@ -13,12 +13,12 @@ patches:
     patch: |-
       - op: replace
         path: /spec/template/spec/containers/0/args/4
-        value: '{"config":{"phases":[{"duration":86400,"arrivalRate":10}]}}'
+        value: '{"config":{"phases":[{"duration":86400,"arrivalRate":30}]}}'
       - op: replace
         path: /spec/template/spec/containers/0/resources
         value:
           requests:
-            cpu: 250m
+            cpu: 500m
             memory: 512Mi
           limits:
             memory: 1Gi

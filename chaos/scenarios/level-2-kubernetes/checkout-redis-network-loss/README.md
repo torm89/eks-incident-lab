@@ -6,7 +6,8 @@ All packets from the checkout service to its Redis are dropped for 5 minutes.
 
 ## Hypothesis
 
-Checkout hangs and fails. Browsing and the cart keep working. Everything recovers by itself after 5 minutes.
+Checkout hangs and fails. Browsing and the cart keep working. Only the checkout SLO pages: checkout is a small share
+of all requests. Everything recovers by itself after 5 minutes.
 
 ## Inject
 

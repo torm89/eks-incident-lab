@@ -6,7 +6,8 @@ The catalog (a tool of the assistant) gets 6 seconds of delay, longer than the a
 
 ## Hypothesis
 
-The store gets slow. The assistant keeps answering with HTTP 200, but its answers are useless: the tools fail and the AI has no products to talk about.
+The store goes down: with 6 s per catalog call the UI fails its readiness probe and drops out of its Service.
+The assistant keeps answering with HTTP 200, but its answers are useless: the tools fail and the AI has no products to talk about.
 
 ## Inject
 
@@ -41,6 +42,7 @@ AI Assistant dashboard: chat error ratio ~0%, LLM calls all `success`, p95 chat 
 <summary>Solution (open after you tried)</summary>
 
 This is a silent failure: HTTP 200, but the answer is wrong or empty. Status codes alone cannot catch it.
+The store side is silent too: the UI receives no requests, so the store SLOs have nothing to measure. Only `StoreTrafficLost` notices.
 
 The root cause is in the catalog, not in the AI. Fix the catalog (recover step, or restart `deploy/catalog`).
 

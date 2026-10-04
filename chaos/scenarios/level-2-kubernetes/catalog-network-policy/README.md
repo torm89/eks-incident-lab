@@ -6,8 +6,11 @@ A security hardening change adds a NetworkPolicy: "only the UI may call the cata
 
 ## Hypothesis
 
-Product pages get slow, then fail. Every pod stays `Running` and `Ready`, nothing restarts.
-Restarting the catalog or the UI does not help: the network path is blocked, not the pods.
+At first almost nothing happens: the store keeps working, only the AI assistant's tools fail.
+The policy blocks new connections, and the UI reuses connections it opened before. Over the next minutes the UI
+renews them, and errors creep in. Every pod stays `Running` and `Ready`.
+
+Restarting the UI makes it **worse**: the new pod has to open new connections, and the whole store goes down.
 
 ## Inject
 
@@ -17,9 +20,9 @@ kubectl apply -k chaos/scenarios/level-2-kubernetes/catalog-network-policy/injec
 
 ## Observe
 
-- **Error ratio (5xx) by service** and **Latency by service**: which service fails, and is it slow first?
-- **Requests / s by service**: what happens to the catalog line?
-- With the AI assistant: **Tool calls / s by tool and outcome** on the AI Assistant dashboard.
+- With the AI assistant: **Tool calls / s by tool and outcome** on the AI Assistant dashboard. This fails first.
+- **Error ratio (5xx) by service**: does the store notice at all? Watch it for 5-10 minutes.
+- Then try what many would do first: `kubectl -n retail-store rollout restart deploy/ui`. What happens to **Traffic**?
 
 ## Diagnose
 
@@ -44,7 +47,7 @@ Or fix its selector to the real UI labels (`app.kubernetes.io/name: ui`) and all
 
 ## Verify
 
-Retail Store dashboard: UI error ratio ~0%, latency back to normal, the catalog line back in **Requests / s by service**.
+Retail Store dashboard: traffic back to normal, UI error ratio ~0%, latency back to normal.
 The AI assistant's tools succeed again.
 
 <details>
@@ -52,13 +55,19 @@ The AI assistant's tools succeed again.
 
 The policy selects the catalog pods, so from now on only the traffic it allows can reach them.
 It allows pods labelled `app: ui`, but the UI pods are labelled `app.kubernetes.io/name: ui`. The selector matches
-nothing: **all** traffic to the catalog is denied. The UI, the AI assistant's tools and Prometheus are all cut off.
+nothing: **all new** traffic to the catalog is denied.
 
-Denied packets are dropped, not rejected: callers wait for their timeout. That is why the UI gets slow before it fails.
-The catalog's own metrics stop too, because Prometheus cannot scrape it: a gap in a panel is a symptom, not "no traffic".
+The VPC CNI enforces policies on new connections; connections that were open before the policy keep working.
+The UI and Prometheus keep their keep-alive connections, so the store and the catalog metrics look fine for a while.
+The AI assistant opens a new connection per tool call: it fails at once (`AssistantToolQualityBudgetBurnFast`).
+A UI restart drops the old connections. The new ones hang (denied packets are dropped, not rejected), the UI receives
+almost no requests, and the store SLOs see nothing: only `StoreTrafficLost` fires.
 Probes come from the node, which NetworkPolicy always allows, so the pods stay `Ready`.
 
-Lesson: when healthy pods cannot talk to each other, check the network layer: NetworkPolicies, Services and endpoints, DNS.
+A latent failure like this one waits for the next restart, deploy or node replacement, maybe hours after the change.
+
+Lesson: "what changed recently?" includes changes that have not bitten yet. A restart is not a harmless first step.
+When healthy pods cannot talk to each other, check the network layer: NetworkPolicies, Services and endpoints, DNS.
 Test a policy before rollout: list the pods its selectors match, and the callers it leaves out.
 
 </details>

@@ -1,4 +1,7 @@
-# Drops all packets from the checkout service to its Redis for 5 minutes.
+# Breaks the network between the checkout service and its Redis for 5 minutes.
+# Applied on the Redis side: checkout calls Redis through its Service (ClusterIP), which is translated to the pod IP
+# only outside the checkout pod, so a filter on checkout's outgoing packets would never match the Redis pod IP.
+# Redis's replies to checkout carry the real pod IPs, so dropping them cuts the connection.
 apiVersion: chaos-mesh.org/v1alpha1
 kind: NetworkChaos
 metadata:
@@ -12,7 +15,7 @@ spec:
       - retail-store
     labelSelectors:
       app.kubernetes.io/name: checkout
-      app.kubernetes.io/component: service
+      app.kubernetes.io/component: redis
   direction: to
   target:
     mode: all
@@ -21,7 +24,7 @@ spec:
         - retail-store
       labelSelectors:
         app.kubernetes.io/name: checkout
-        app.kubernetes.io/component: redis
+        app.kubernetes.io/component: service
   loss:
     loss: "100"
     correlation: "0"

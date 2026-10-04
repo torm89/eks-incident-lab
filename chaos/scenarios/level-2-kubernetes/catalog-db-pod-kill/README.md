@@ -16,9 +16,10 @@ kubectl apply -k chaos/scenarios/level-2-kubernetes/catalog-db-pod-kill/inject
 
 ## Observe
 
-- **Pods ready** dips briefly; **Data store pods** shows `catalog-mysql-0` not ready.
-- **Error ratio (5xx) by service**: `ui` and `catalog`. Does it go back to zero by itself?
-- **Container restarts (15 min)** for the catalog pods.
+- **Errors**: most UI requests fail. Does it go back to zero by itself?
+- **Error ratio (5xx) by service**: only `ui`. Why does `catalog` stay at 0%?
+- **Pods ready** and **Container restarts**: anything at all? The new MySQL pod is usually ready within seconds.
+- **Requests / s by service**: catalog still gets traffic. What does it answer?
 
 ## Diagnose
 
@@ -44,6 +45,10 @@ Retail Store dashboard: requests flowing, UI error ratio ~0%, orders/min > 0, al
 <summary>Solution (open after you tried)</summary>
 
 MySQL came back with an empty data directory. The catalog creates its schema and sample data only at startup, so it must be restarted.
+
+The catalog logs `Table 'catalog.products' doesn't exist` but answers **404 Not Found**, not 5xx: from its point of view the
+products just do not exist. The UI turns that into 5xx. The MySQL pod is replaced within seconds, so no restart and
+usually no `DataStoreNotReady`: nothing on the Kubernetes side looks wrong.
 
 Lesson: "all pods Running" does not mean "working". A real fix is persistent storage (EBS + PVC) for the database.
 

@@ -82,11 +82,16 @@ def _latency(histogram: str, selector: str, threshold_le: str) -> tuple[str, str
 
 
 STORE_UI = 'namespace="retail-store", app_kubernetes_io_name="ui", uri!~"/actuator.*"'
+# The critical user journey: a few % of all UI requests, so a broken checkout hides in the store-wide ratio.
+STORE_CHECKOUT = 'namespace="retail-store", app_kubernetes_io_name="ui", uri=~"/checkout.*"'
 
 SLOS = (
     Slo("store-availability", "retail-store", "Store availability", 0.99,
         "UI request without a 5xx status",
         *_availability("http_server_requests_seconds_count", STORE_UI, 'status=~"5.."')),
+    Slo("store-checkout", "retail-store", "Store checkout", 0.99,
+        "checkout request without a 5xx status",
+        *_availability("http_server_requests_seconds_count", STORE_CHECKOUT, 'status=~"5.."')),
     Slo("store-latency", "retail-store", "Store latency", 0.95,
         "UI request faster than 1 s",
         *_latency("http_server_requests_seconds", STORE_UI, "1.0")),

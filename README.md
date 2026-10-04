@@ -69,7 +69,7 @@ Every practice session follows the same loop:
 | [carts-oom](chaos/scenarios/level-2-kubernetes/carts-oom/) | Kubernetes | ⭐⭐ | OOMKilled and CrashLoopBackOff: fix the limit, not the pod |
 | [llm-key-invalid](chaos/scenarios/level-2-kubernetes/llm-key-invalid/) | Kubernetes (AI) | ⭐⭐ | nothing was deployed, yet something changed: a bad Secret |
 | [catalog-network-policy](chaos/scenarios/level-2-kubernetes/catalog-network-policy/) | Kubernetes | ⭐⭐⭐ | healthy pods, a NetworkPolicy whose selector matches nothing |
-| [traffic-spike](chaos/scenarios/level-2-kubernetes/traffic-spike/) | Kubernetes | ⭐⭐ | overload is not a bug: scale out, watch saturation |
+| [traffic-spike](chaos/scenarios/level-2-kubernetes/traffic-spike/) | Kubernetes | ⭐⭐ | overload is not a bug, and server-side metrics hide the queue |
 | [node-spot-interruption](chaos/scenarios/level-3-aws/node-spot-interruption/) | AWS | ⭐⭐ | losing a spot node with a 2-minute warning |
 | [node-terminate](chaos/scenarios/level-3-aws/node-terminate/) | AWS | ⭐⭐ | losing a node with no warning, capacity headroom |
 | [az-network-disruption](chaos/scenarios/level-3-aws/az-network-disruption/) | AWS | ⭐⭐⭐ | an availability zone goes dark, tolerations and timeouts |
@@ -162,15 +162,16 @@ kubectl apply -k traffic/ai-assistant
 
 Hybrid alerting, all generated as code and unit-tested with `promtool`:
 
-- **Symptoms** (what customers feel): 5 SLOs with multiwindow, multi-burn-rate alerts from the
+- **Symptoms** (what customers feel): 6 SLOs with multiwindow, multi-burn-rate alerts from the
   [Google SRE workbook](https://sre.google/workbook/alerting-on-slos/), windows scaled down 12x to fit a practice session.
-  A total outage pages within about 2 minutes.
+  A total outage pages within about 4 minutes (the 5-minute window must be mostly bad; from a cold start, 2 minutes).
 - **Causes** (why): threshold warnings such as `DataStoreNotReady` or `LlmRetryAmplification`, plus the kube-prometheus-stack defaults.
 - **UI only** for now: Alertmanager and Grafana (firing alerts are annotations on the dashboards). Every alert links to the [runbook](docs/runbooks/alerts.md).
 
 | SLO | Objective | Good event |
 |---|---|---|
 | store-availability | 99% | UI request without a 5xx status |
+| store-checkout | 99% | checkout request (`/checkout*`) without a 5xx status |
 | store-latency | 95% | UI request faster than 1 s |
 | assistant-availability | 95% | question answered |
 | assistant-latency | 95% | question answered within 30 s |

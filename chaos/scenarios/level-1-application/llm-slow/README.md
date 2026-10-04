@@ -6,7 +6,8 @@ Every LLM call gets 20 seconds of extra delay, like when the provider is overloa
 
 ## Hypothesis
 
-Answers still succeed, but each one takes about 40 s (two LLM calls per answer). No errors, so nothing is red.
+Answers still succeed, but each one takes about 40 s (two LLM calls per answer). No errors: only the latency SLO
+(30 s) notices, and pages after about 4-5 minutes.
 
 ## Inject
 

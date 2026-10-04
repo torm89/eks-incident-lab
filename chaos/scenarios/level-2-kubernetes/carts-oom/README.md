@@ -6,7 +6,8 @@ A cost-cutting release lowers the carts memory limit far below what the service 
 
 ## Hypothesis
 
-The carts pod is killed again and again and never becomes ready. The cart and checkout fail; browsing still works.
+The carts pod is killed again and again and never becomes ready. The whole store fails, not only the cart:
+every page shows the cart in its header, so every page needs carts.
 Restarting does not help: every new pod gets the same limit.
 
 ## Inject
@@ -17,7 +18,8 @@ kubectl apply -k chaos/scenarios/level-2-kubernetes/carts-oom/inject
 
 ## Observe
 
-- **Error ratio (5xx) by service**: `ui` and `carts`. Does the home page still load?
+- **Error ratio (5xx) by service**: only `ui`, at 100%. Does the home page still load?
+- **Traffic** and **Latency p95**: the UI waits for carts, the load generator slows down.
 - **Pods ready**: carts drops out. **Container restarts (15 min)** keeps growing.
 - **Memory, % of limit** for carts: does it reach 100%?
 
@@ -54,6 +56,7 @@ The release sets the carts memory limit to 128Mi instead of 512Mi.
 The JVM sizes its heap to 75% of the limit (`-XX:MaxRAMPercentage=75.0`) and needs native memory on top of it.
 The container goes over the limit and the kernel kills it: **Last State: Terminated, Reason: OOMKilled, Exit Code: 137**.
 Kubernetes restarts it with a growing delay: `CrashLoopBackOff`.
+A dependency that every page needs (here: the cart in the header) turns one crashing service into a full outage.
 
 If the reason is `Error` (exit code 1) instead, the JVM itself ran out of heap (`java.lang.OutOfMemoryError` in
 `kubectl logs --previous`). Same cause, same fix.

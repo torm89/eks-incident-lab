@@ -18,18 +18,18 @@ Expected alerts per scenario:
 
 | Scenario | Expected alerts |
 |---|---|
-| orders-http-500 | `StoreAvailabilityBudgetBurnSlow` (or `...Fast`, depending on how many requests hit orders) |
-| catalog-latency | `StoreLatencyBudgetBurn*` |
+| orders-http-500 | `StoreCheckoutBudgetBurnFast` (the store-wide `StoreAvailability...` stays quiet: only ~4% of requests fail) |
+| catalog-latency | `StoreLatencyBudgetBurnFast` (after ~5 min), `StoreTrafficLost` |
 | llm-rate-limit | `AssistantAvailabilityBudgetBurnFast`, `LlmRetryAmplification` |
-| llm-slow | `AssistantLatencyBudgetBurn*` |
-| ai-tool-cascade | `AssistantToolQualityBudgetBurnFast`, `StoreLatencyBudgetBurn*` |
-| catalog-db-pod-kill | `DataStoreNotReady`, `StoreAvailabilityBudgetBurn*` |
-| checkout-redis-network-loss | `StoreLatencyBudgetBurn*` and/or `StoreAvailabilityBudgetBurn*` |
+| llm-slow | `AssistantLatencyBudgetBurnFast` (after ~4-5 min) |
+| ai-tool-cascade | `AssistantToolQualityBudgetBurnFast`, `StoreTrafficLost` (the UI drops out; store SLOs see no requests) |
+| catalog-db-pod-kill | `StoreAvailabilityBudgetBurnFast` (`DataStoreNotReady` only if MySQL stays not ready for 1 min, usually not) |
+| checkout-redis-network-loss | `StoreCheckoutBudgetBurnFast` (the store-wide SLOs stay quiet: only checkout fails) |
 | ui-bad-deploy | `StoreAvailabilityBudgetBurnFast` |
 | llm-key-invalid | `AssistantAvailabilityBudgetBurnFast` (no `LlmRetryAmplification`: 401 is not retried) |
-| catalog-network-policy | `StoreLatencyBudgetBurn*` then `StoreAvailabilityBudgetBurn*`, built-in `TargetDown` (catalog scrape) |
-| traffic-spike | `StoreLatencyBudgetBurn*` (errors only if the overload grows) |
-| carts-oom | `StoreAvailabilityBudgetBurn*`, built-in `KubePodCrashLooping` / `KubeDeploymentRolloutStuck` |
+| catalog-network-policy | `AssistantToolQualityBudgetBurnFast`; after a UI restart `StoreTrafficLost` (old connections keep the store alive until then) |
+| traffic-spike | `PodReadinessFlapping` (the SLOs stay green: the UI cannot see requests queued in front of it) |
+| carts-oom | `StoreAvailabilityBudgetBurnFast` (~1 min), `StoreTrafficLost`, later built-in `KubePodCrashLooping` / `KubeDeploymentRolloutStuck` |
 | node-spot-interruption, node-terminate, az-network-disruption | built-in `KubeNodeNotReady` / `KubePodNotReady`, plus SLO alerts for the affected services |
 
 The SLO alerts are verified by unit tests; the per-scenario mapping is the hypothesis to check during practice.

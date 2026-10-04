@@ -21,6 +21,9 @@ Still to build:
 
 ## Observability
 
+- **Customer-side SLIs**: the UI's own metrics miss requests that never reach it or wait in a queue in front of it
+  (`catalog-latency`, `ai-tool-cascade`, `catalog-network-policy`, `traffic-spike`). Export the load generator's
+  results (Artillery Prometheus publisher) or add blackbox probes, and base the store SLOs on them.
 - **Logs in Grafana** (Loki + Alloy): diagnose without `kubectl logs`.
 - **Traces** (Tempo): the app already emits OpenTelemetry; follow one request UI → checkout → orders → LLM.
 - **Notifications**: Slack or Discord receiver in Alertmanager (webhook in a Secret, never in the repo).

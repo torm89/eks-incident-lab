@@ -40,6 +40,36 @@ spec:
         slo: store-availability
         service: retail-store
     - record: slo:sli_requests:rate1m
+      expr: sum(rate(http_server_requests_seconds_count{namespace="retail-store", app_kubernetes_io_name="ui", uri=~"/checkout.*"}[1m]))
+      labels:
+        slo: store-checkout
+        service: retail-store
+    - record: slo:sli_error:ratio_rate1m
+      expr: ((sum(rate(http_server_requests_seconds_count{namespace="retail-store", app_kubernetes_io_name="ui", uri=~"/checkout.*", status=~"5.."}[1m])) or vector(0))) / (sum(rate(http_server_requests_seconds_count{namespace="retail-store", app_kubernetes_io_name="ui", uri=~"/checkout.*"}[1m])))
+      labels:
+        slo: store-checkout
+        service: retail-store
+    - record: slo:sli_requests:rate5m
+      expr: sum(rate(http_server_requests_seconds_count{namespace="retail-store", app_kubernetes_io_name="ui", uri=~"/checkout.*"}[5m]))
+      labels:
+        slo: store-checkout
+        service: retail-store
+    - record: slo:sli_error:ratio_rate5m
+      expr: ((sum(rate(http_server_requests_seconds_count{namespace="retail-store", app_kubernetes_io_name="ui", uri=~"/checkout.*", status=~"5.."}[5m])) or vector(0))) / (sum(rate(http_server_requests_seconds_count{namespace="retail-store", app_kubernetes_io_name="ui", uri=~"/checkout.*"}[5m])))
+      labels:
+        slo: store-checkout
+        service: retail-store
+    - record: slo:sli_requests:rate30m
+      expr: sum(rate(http_server_requests_seconds_count{namespace="retail-store", app_kubernetes_io_name="ui", uri=~"/checkout.*"}[30m]))
+      labels:
+        slo: store-checkout
+        service: retail-store
+    - record: slo:sli_error:ratio_rate30m
+      expr: ((sum(rate(http_server_requests_seconds_count{namespace="retail-store", app_kubernetes_io_name="ui", uri=~"/checkout.*", status=~"5.."}[30m])) or vector(0))) / (sum(rate(http_server_requests_seconds_count{namespace="retail-store", app_kubernetes_io_name="ui", uri=~"/checkout.*"}[30m])))
+      labels:
+        slo: store-checkout
+        service: retail-store
+    - record: slo:sli_requests:rate1m
       expr: sum(rate(http_server_requests_seconds_count{namespace="retail-store", app_kubernetes_io_name="ui", uri!~"/actuator.*"}[1m]))
       labels:
         slo: store-latency
@@ -188,6 +218,34 @@ spec:
         summary: 'Store availability: error budget burns 6x faster than sustainable: look at it soon.'
         description: 'SLO: 99% of events are good (UI request without a 5xx status). Over the last 30m and 5m, more than 6.0% of events were bad (burn rate > 6x). Current 30m error ratio: {{ $value | humanizePercentage }}.'
         runbook_url: https://github.com/torm89/eks-incident-lab/blob/main/docs/runbooks/alerts.md#store-availability
+        dashboard: /d/retail-store
+    - alert: StoreCheckoutBudgetBurnFast
+      expr: |-
+        slo:sli_error:ratio_rate5m{slo="store-checkout"} > 0.144
+        and slo:sli_error:ratio_rate1m{slo="store-checkout"} > 0.144
+        and slo:sli_requests:rate5m{slo="store-checkout"} >= 0.033333
+      labels:
+        severity: critical
+        slo: store-checkout
+        service: retail-store
+      annotations:
+        summary: 'Store checkout: error budget burns 14.4x faster than sustainable: act now.'
+        description: 'SLO: 99% of events are good (checkout request without a 5xx status). Over the last 5m and 1m, more than 14.4% of events were bad (burn rate > 14.4x). Current 5m error ratio: {{ $value | humanizePercentage }}.'
+        runbook_url: https://github.com/torm89/eks-incident-lab/blob/main/docs/runbooks/alerts.md#store-checkout
+        dashboard: /d/retail-store
+    - alert: StoreCheckoutBudgetBurnSlow
+      expr: |-
+        slo:sli_error:ratio_rate30m{slo="store-checkout"} > 0.06
+        and slo:sli_error:ratio_rate5m{slo="store-checkout"} > 0.06
+        and slo:sli_requests:rate30m{slo="store-checkout"} >= 0.005556
+      labels:
+        severity: warning
+        slo: store-checkout
+        service: retail-store
+      annotations:
+        summary: 'Store checkout: error budget burns 6x faster than sustainable: look at it soon.'
+        description: 'SLO: 99% of events are good (checkout request without a 5xx status). Over the last 30m and 5m, more than 6.0% of events were bad (burn rate > 6x). Current 30m error ratio: {{ $value | humanizePercentage }}.'
+        runbook_url: https://github.com/torm89/eks-incident-lab/blob/main/docs/runbooks/alerts.md#store-checkout
         dashboard: /d/retail-store
     - alert: StoreLatencyBudgetBurnFast
       expr: |-
