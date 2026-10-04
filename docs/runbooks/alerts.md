@@ -96,6 +96,8 @@ and the services that seed data at startup (catalog) must be restarted.
 
 A pod uses over 90% of its memory limit for 5 minutes. At 100% it is OOM-killed.
 Check **Memory, % of limit** and **Container restarts**. Raise the limit or find the memory growth (load, leak).
+A pod killed at startup may never reach 5 minutes: look for `OOMKilled` in `kubectl describe pod` (Last State).
+**Practice:** [carts-oom](../../chaos/scenarios/level-2-kubernetes/carts-oom/).
 
 ### LlmRetryAmplification
 

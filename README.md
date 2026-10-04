@@ -66,6 +66,7 @@ Every practice session follows the same loop:
 | [catalog-db-pod-kill](chaos/scenarios/level-2-kubernetes/catalog-db-pod-kill/) | Kubernetes | ⭐⭐⭐ | a database restart that loses its data |
 | [checkout-redis-network-loss](chaos/scenarios/level-2-kubernetes/checkout-redis-network-loss/) | Kubernetes | ⭐⭐ | healthy pods, broken network between them |
 | [ui-bad-deploy](chaos/scenarios/level-2-kubernetes/ui-bad-deploy/) | Kubernetes | ⭐ | "what changed?": roll back, a restart does not help |
+| [carts-oom](chaos/scenarios/level-2-kubernetes/carts-oom/) | Kubernetes | ⭐⭐ | OOMKilled and CrashLoopBackOff: fix the limit, not the pod |
 | [node-spot-interruption](chaos/scenarios/level-3-aws/node-spot-interruption/) | AWS | ⭐⭐ | losing a spot node with a 2-minute warning |
 | [node-terminate](chaos/scenarios/level-3-aws/node-terminate/) | AWS | ⭐⭐ | losing a node with no warning, capacity headroom |
 | [az-network-disruption](chaos/scenarios/level-3-aws/az-network-disruption/) | AWS | ⭐⭐⭐ | an availability zone goes dark, tolerations and timeouts |

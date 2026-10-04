@@ -1,0 +1,16 @@
+# 128Mi instead of 512Mi. The JVM takes 75% of the limit for its heap, plus its own native memory:
+# the container goes over the limit at startup and is OOM-killed, again and again (CrashLoopBackOff).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: carts
+spec:
+  template:
+    spec:
+      containers:
+        - name: carts
+          resources:
+            limits:
+              memory: 128Mi
+            requests:
+              memory: 128Mi

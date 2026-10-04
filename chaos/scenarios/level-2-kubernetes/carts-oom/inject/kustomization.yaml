@@ -1,0 +1,10 @@
+# A cost-cutting release: the whole store is re-applied, carts with a memory limit far below what it needs.
+# Only the carts Deployment changes, so this creates a new carts revision.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../../../../apps/retail-store
+
+patches:
+  - path: carts-memory-limit.yaml
