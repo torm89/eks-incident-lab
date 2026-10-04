@@ -1,0 +1,9 @@
+# Chart defaults work on EKS (kubelet serving certificates are trusted). Small cluster: one replica.
+replicas: 1
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    memory: 128Mi

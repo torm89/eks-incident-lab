@@ -36,7 +36,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 INFRA_DIR = REPO_ROOT / "infra"
 BACKEND_CONFIG = REPO_ROOT / "backend.hcl"
 FIS_SCENARIOS_DIR = REPO_ROOT / "chaos" / "scenarios" / "level-3-aws"
-HELM_CHART_CACHES = [REPO_ROOT / "platform" / "monitoring" / "charts", REPO_ROOT / "platform" / "monitoring" / "crds" / "charts"]
+HELM_CHART_CACHES = [REPO_ROOT / "platform" / name / "charts" for name in ("monitoring", "monitoring/crds", "metrics-server")]
 
 MIN_TOFU_VERSION = (1, 10)
 REQUIRED_HELM_MAJOR = 3  # kubectl's built-in kustomize does not work with Helm 4.
@@ -296,11 +296,13 @@ def up(runner: Runner, with_ai: bool, auto_approve: bool) -> None:
     profile = ["--profile", os.environ["AWS_PROFILE"]] if os.environ.get("AWS_PROFILE") else []
     runner.run(["aws", "eks", "update-kubeconfig", "--region", region, "--name", cluster, *profile])
 
-    step(4, total, "Monitoring (Prometheus, Grafana, Alertmanager, alerts)")
+    step(4, total, "Platform (metrics-server, Prometheus, Grafana, Alertmanager, alerts)")
+    apply_kustomization(runner, "platform/metrics-server", with_helm=True)
     apply_kustomization(runner, "platform/monitoring/crds", with_helm=True)
     runner.run(["kubectl", "wait", "--for=condition=Established", "crd", "--all", f"--timeout={CRD_TIMEOUT}"])
     apply_kustomization(runner, "platform/monitoring", with_helm=True)
     wait_for_rollouts(runner, "monitoring")
+    runner.run(["kubectl", "-n", "kube-system", "rollout", "status", "deployment/metrics-server", f"--timeout={ROLLOUT_TIMEOUT}"])
 
     step(5, total, "Retail Store")
     apply_kustomization(runner, "apps/retail-store")

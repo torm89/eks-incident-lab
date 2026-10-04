@@ -1,0 +1,12 @@
+# metrics-server: CPU and memory of pods and nodes for `kubectl top` and HorizontalPodAutoscalers.
+# Not used by Prometheus or Grafana (they have their own metrics).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+helmCharts:
+  - name: metrics-server
+    repo: https://kubernetes-sigs.github.io/metrics-server/
+    version: 3.14.0 # metrics-server v0.9.0
+    releaseName: metrics-server
+    namespace: kube-system
+    valuesFile: values.yaml

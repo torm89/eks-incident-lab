@@ -2,23 +2,13 @@
 
 Ideas for the lab that are not built yet. Ordered by value within each section.
 
-## New scenarios: where a restart does not help
+## New scenarios
 
-Most current scenarios are fixed by restarting a deployment (the failure lives in process memory).
-That teaches a bad reflex: in real incidents a restart is only one tool, and often a dead end.
-Each scenario below needs a different fix.
+Done, each with a fix other than a restart: [`ui-bad-deploy`](../chaos/scenarios/level-2-kubernetes/ui-bad-deploy/),
+[`carts-oom`](../chaos/scenarios/level-2-kubernetes/carts-oom/), [`llm-key-invalid`](../chaos/scenarios/level-2-kubernetes/llm-key-invalid/),
+[`catalog-network-policy`](../chaos/scenarios/level-2-kubernetes/catalog-network-policy/), [`traffic-spike`](../chaos/scenarios/level-2-kubernetes/traffic-spike/).
 
-| Scenario | Level | Failure | Fix it teaches | Why a restart fails |
-|---|---|---|---|---|
-| `traffic-spike` | 2 | 10x more synthetic traffic (more replicas of the traffic Deployment) | scale out (more replicas), rate limiting | more of the same pods are needed, not new ones |
-
-Done: [`ui-bad-deploy`](../chaos/scenarios/level-2-kubernetes/ui-bad-deploy/), [`carts-oom`](../chaos/scenarios/level-2-kubernetes/carts-oom/), [`llm-key-invalid`](../chaos/scenarios/level-2-kubernetes/llm-key-invalid/), [`catalog-network-policy`](../chaos/scenarios/level-2-kubernetes/catalog-network-policy/).
-
-Prerequisites and pitfalls:
-
-- `traffic-spike`: the traffic generator is a Deployment, so inject is a Kustomize patch (level 2), not the app's chaos API. Watch node capacity (17 pods per t3.medium node): scaled-out pods may stay `Pending`, which is a lesson of its own (cluster autoscaling, or prefix delegation below).
-
-Also worth a scenario later:
+Still to build:
 
 - `ai-cost-runaway`: a prompt or agent change makes the agent loop; cost alert, step limit, rollback.
 - `prompt-regression`: a new system prompt gives worse answers; caught by a small answer-quality check (eval) before release.

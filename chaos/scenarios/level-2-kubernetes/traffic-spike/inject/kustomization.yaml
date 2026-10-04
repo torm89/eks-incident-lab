@@ -1,0 +1,24 @@
+# A marketing campaign: 10x more customers. One load generator with a 10x arrival rate
+# (more replicas would need room on the nodes and give the scenario away while Pending).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../../../../traffic
+
+patches:
+  - target:
+      kind: Deployment
+      name: load-generator
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/args/4
+        value: '{"config":{"phases":[{"duration":86400,"arrivalRate":10}]}}'
+      - op: replace
+        path: /spec/template/spec/containers/0/resources
+        value:
+          requests:
+            cpu: 250m
+            memory: 512Mi
+          limits:
+            memory: 1Gi
