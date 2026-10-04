@@ -23,6 +23,8 @@ module "eks" {
     kube-proxy = {}
     vpc-cni = {
       before_compute = true
+      # Enforces Kubernetes NetworkPolicy (off by default on EKS: policies would be ignored).
+      configuration_values = jsonencode({ enableNetworkPolicy = "true" })
     }
   }
 

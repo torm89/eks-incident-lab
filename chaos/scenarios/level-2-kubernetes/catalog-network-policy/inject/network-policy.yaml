@@ -1,0 +1,22 @@
+# A "hardening" change: only the UI may call the catalog.
+# The UI selector was copied from another template and uses the wrong label (app: ui):
+# it matches no pod, so all traffic to the catalog is denied (UI, AI assistant tools, Prometheus scrapes).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: catalog-allow-ui-only
+  namespace: retail-store
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: catalog
+      app.kubernetes.io/component: service
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: ui
+      ports:
+        - port: 8080

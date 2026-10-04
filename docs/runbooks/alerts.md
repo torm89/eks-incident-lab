@@ -42,7 +42,7 @@ A firing fast burn silences the slow burn of the same SLO in Alertmanager.
 3. Is a dependency unreachable (timeouts)? Check the logs of the slow service.
 
 **Usual causes:** a slow backend, CPU throttling, network problems between services.
-**Practice:** [catalog-latency](../../chaos/scenarios/level-1-application/catalog-latency/), [checkout-redis-network-loss](../../chaos/scenarios/level-2-kubernetes/checkout-redis-network-loss/).
+**Practice:** [catalog-latency](../../chaos/scenarios/level-1-application/catalog-latency/), [checkout-redis-network-loss](../../chaos/scenarios/level-2-kubernetes/checkout-redis-network-loss/), [catalog-network-policy](../../chaos/scenarios/level-2-kubernetes/catalog-network-policy/).
 
 ### assistant-availability
 
