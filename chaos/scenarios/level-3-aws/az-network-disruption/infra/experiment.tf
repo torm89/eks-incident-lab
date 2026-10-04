@@ -33,10 +33,10 @@ resource "aws_fis_experiment_template" "this" {
     resource_type  = "aws:ec2:subnet"
     selection_mode = "ALL"
 
-    # infra/ tags every resource with Project=torm-eks.
+    # infra/ tags every resource with Project=eks-incident-lab.
     resource_tag {
       key   = "Project"
-      value = "torm-eks"
+      value = "eks-incident-lab"
     }
 
     # Set by infra/modules/network on the subnets that host worker nodes

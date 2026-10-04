@@ -1,7 +1,7 @@
 variable "cluster_name" {
   description = "Name of the EKS cluster created by infra/."
   type        = string
-  default     = "torm-eks"
+  default     = "eks-incident-lab"
 }
 
 variable "availability_zone" {

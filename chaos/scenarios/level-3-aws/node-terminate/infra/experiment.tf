@@ -23,7 +23,7 @@ resource "aws_fis_experiment_template" "this" {
   }
 
   # Found by tag at start time, so the template can exist before the cluster.
-  # infra/ tags every resource with Project=torm-eks.
+  # infra/ tags every resource with Project=eks-incident-lab.
   target {
     name           = "cluster-node-groups"
     resource_type  = "aws:eks:nodegroup"
@@ -31,7 +31,7 @@ resource "aws_fis_experiment_template" "this" {
 
     resource_tag {
       key   = "Project"
-      value = "torm-eks"
+      value = "eks-incident-lab"
     }
   }
 

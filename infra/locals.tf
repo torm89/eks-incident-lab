@@ -1,6 +1,6 @@
 locals {
   common_tags = {
-    Project   = "torm-eks"
+    Project   = "eks-incident-lab"
     ManagedBy = "terraform"
   }
 }

@@ -29,7 +29,7 @@ from pathlib import Path
 import boto3
 import yaml
 
-REPOSITORY_PREFIX = "torm-eks"
+REPOSITORY_PREFIX = "eks-incident-lab"
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SERVICES_DIR = REPO_ROOT / "services"

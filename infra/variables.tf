@@ -1,7 +1,7 @@
 variable "environment_name" {
   description = "Name of the environment. Used as the VPC and EKS cluster name."
   type        = string
-  default     = "torm-eks"
+  default     = "eks-incident-lab"
 }
 
 variable "vpc_cidr" {

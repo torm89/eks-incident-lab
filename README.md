@@ -137,7 +137,7 @@ kubectl -n monitoring port-forward svc/kube-prometheus-stack-grafana 3000:80   #
 ```bash
 # 1. Cluster
 cd infra && tofu init -backend-config=../backend.hcl && tofu apply && cd ..
-aws eks update-kubeconfig --region eu-west-1 --name torm-eks
+aws eks update-kubeconfig --region eu-west-1 --name eks-incident-lab
 
 # 2. Platform: metrics-server, then monitoring (CRDs first)
 kubectl kustomize --enable-helm platform/metrics-server | kubectl apply --server-side -f -

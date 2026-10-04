@@ -20,3 +20,6 @@ backend.hcl
 backend_override.tf
 apps/ai-assistant/registry/
 .chaos-session.json
+
+# IDE settings
+.idea/

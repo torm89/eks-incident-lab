@@ -4,7 +4,7 @@ provider "aws" {
 
   default_tags {
     tags = {
-      Project   = "torm-eks"
+      Project   = "eks-incident-lab"
       ManagedBy = "terraform"
     }
   }
