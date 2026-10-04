@@ -26,6 +26,7 @@ Expected alerts per scenario:
 | catalog-db-pod-kill | `DataStoreNotReady`, `StoreAvailabilityBudgetBurn*` |
 | checkout-redis-network-loss | `StoreLatencyBudgetBurn*` and/or `StoreAvailabilityBudgetBurn*` |
 | ui-bad-deploy | `StoreAvailabilityBudgetBurnFast` |
+| llm-key-invalid | `AssistantAvailabilityBudgetBurnFast` (no `LlmRetryAmplification`: 401 is not retried) |
 | carts-oom | `StoreAvailabilityBudgetBurn*`, built-in `KubePodCrashLooping` / `KubeDeploymentRolloutStuck` |
 | node-spot-interruption, node-terminate, az-network-disruption | built-in `KubeNodeNotReady` / `KubePodNotReady`, plus SLO alerts for the affected services |
 
@@ -60,6 +61,7 @@ The commands in each scenario README still work if you prefer doing it by hand.
 | [checkout-redis-network-loss](scenarios/level-2-kubernetes/checkout-redis-network-loss/) | 2 - Kubernetes | Chaos Mesh | Chaos Mesh |
 | [ui-bad-deploy](scenarios/level-2-kubernetes/ui-bad-deploy/) | 2 - Kubernetes | `kubectl apply` | none |
 | [carts-oom](scenarios/level-2-kubernetes/carts-oom/) | 2 - Kubernetes | `kubectl apply` | none |
+| [llm-key-invalid](scenarios/level-2-kubernetes/llm-key-invalid/) | 2 - Kubernetes (AI) | `kubectl apply` | AI assistant (mock mode) |
 | [node-spot-interruption](scenarios/level-3-aws/node-spot-interruption/) | 3 - AWS | AWS FIS | `tofu apply` in the scenario |
 | [node-terminate](scenarios/level-3-aws/node-terminate/) | 3 - AWS | AWS FIS | `tofu apply` in the scenario |
 | [az-network-disruption](scenarios/level-3-aws/az-network-disruption/) | 3 - AWS | AWS FIS | `tofu apply` in the scenario |

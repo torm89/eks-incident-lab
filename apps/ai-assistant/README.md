@@ -45,10 +45,11 @@ Grafana dashboard: **Incident Lab / AI Assistant**.
 
 ## Real Anthropic API (paid)
 
-1. Create the Secret from your key. The key never goes into the repo.
+1. Create (or replace) the Secret with your key. The key never goes into the repo.
+   The gateway reads it as a file and picks up a changed key within about a minute, without a restart.
 
    ```bash
-   kubectl -n ai-assistant create secret generic anthropic-api-key --from-literal=api-key=<your key>
+   kubectl -n ai-assistant create secret generic anthropic-api-key --from-literal=api-key=<your key> --dry-run=client -o yaml | kubectl apply -f -
    ```
 
 2. Slow the traffic down to one question every 10 s, **before** switching (the default one per second would cost ~10x more):
@@ -83,7 +84,7 @@ In mock mode the **LLM cost / hour** panel shows what the real API *would* cost 
 
 ## Chaos scenarios
 
-See [chaos/README.md](../../chaos/README.md): `llm-rate-limit`, `llm-slow`, `ai-tool-cascade`.
+See [chaos/README.md](../../chaos/README.md): `llm-rate-limit`, `llm-slow`, `ai-tool-cascade`, `llm-key-invalid`.
 
 ## Change the code
 

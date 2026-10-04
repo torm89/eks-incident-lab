@@ -27,13 +27,11 @@ spec:
           env:
             - name: LLM_MODE
               value: mock
-            # Used only in real mode. Optional, so mock mode needs no Secret.
-            - name: ANTHROPIC_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: anthropic-api-key
-                  key: api-key
-                  optional: true
+          # The key is a file, re-read on every request: a changed Secret takes effect without a restart.
+          volumeMounts:
+            - name: anthropic-api-key
+              mountPath: /var/run/secrets/anthropic
+              readOnly: true
           readinessProbe:
             httpGet:
               path: /healthz
@@ -47,6 +45,12 @@ spec:
           securityContext:
             runAsNonRoot: true
             allowPrivilegeEscalation: false
+      volumes:
+        # Needed in real mode. Optional, so mock mode needs no Secret.
+        - name: anthropic-api-key
+          secret:
+            secretName: anthropic-api-key
+            optional: true
 ---
 apiVersion: v1
 kind: Service

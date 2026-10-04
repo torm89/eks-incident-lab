@@ -10,15 +10,13 @@ Each scenario below needs a different fix.
 
 | Scenario | Level | Failure | Fix it teaches | Why a restart fails |
 |---|---|---|---|---|
-| `llm-key-invalid` | 2 | The `anthropic-api-key` Secret holds an invalid key | fix the Secret, then roll the gateway | a restart reloads the same bad key |
 | `catalog-network-policy` | 2 | A NetworkPolicy blocks traffic to catalog | find and remove the policy | pods are healthy, the network path is not |
 | `traffic-spike` | 2 | 10x more synthetic traffic (more replicas of the traffic Deployment) | scale out (more replicas), rate limiting | more of the same pods are needed, not new ones |
 
-Done: [`ui-bad-deploy`](../chaos/scenarios/level-2-kubernetes/ui-bad-deploy/), [`carts-oom`](../chaos/scenarios/level-2-kubernetes/carts-oom/). Next: `llm-key-invalid`, the most common of the rest in real incidents.
+Done: [`ui-bad-deploy`](../chaos/scenarios/level-2-kubernetes/ui-bad-deploy/), [`carts-oom`](../chaos/scenarios/level-2-kubernetes/carts-oom/), [`llm-key-invalid`](../chaos/scenarios/level-2-kubernetes/llm-key-invalid/).
 
 Prerequisites and pitfalls:
 
-- `llm-key-invalid`: the fault must live in the Secret, not in process memory. A 401 injected through `/chaos/status` is cleared by a restart, which defeats the point. In mock mode the gateway needs to read the key from the Secret too and reject a known invalid value; inject swaps the Secret, recover restores it.
 - `catalog-network-policy`: EKS does not enforce NetworkPolicy by default. Enable it first in the `vpc-cni` addon (`configuration_values = jsonencode({ enableNetworkPolicy = "true" })` in `infra/modules/eks/eks.tf`); without it the policy has no effect.
 - `traffic-spike`: the traffic generator is a Deployment, so inject is a Kustomize patch (level 2), not the app's chaos API. Watch node capacity (17 pods per t3.medium node): scaled-out pods may stay `Pending`, which is a lesson of its own (cluster autoscaling, or prefix delegation below).
 

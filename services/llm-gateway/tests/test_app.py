@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -8,11 +10,16 @@ MESSAGE_REQUEST = {"model": "claude-haiku-4-5", "max_tokens": 100, "messages": [
 
 
 @pytest.fixture
-def client() -> TestClient:
+def api_key_file(tmp_path) -> Path:
+    return tmp_path / "api-key"
+
+
+@pytest.fixture
+def client(api_key_file) -> TestClient:
     settings = Settings(
         mode=Mode.MOCK,
         upstream_url="http://upstream.invalid",
-        api_key="",
+        api_key_file=api_key_file,
         upstream_timeout_seconds=1,
         mock_latency_ms=0,
     )
@@ -76,3 +83,27 @@ def test_metrics_are_exposed(client):
     response = client.get("/metrics/")
 
     assert "llm_gateway_requests_total" in response.text
+
+
+def test_mock_mode_accepts_a_well_formed_key_with_trailing_newline(client, api_key_file):
+    api_key_file.write_text("sk-ant-mock\n")
+
+    assert client.post("/v1/messages", json=MESSAGE_REQUEST).status_code == 200
+
+
+def test_mock_mode_rejects_a_malformed_key(client, api_key_file):
+    api_key_file.write_text("ant-api03-malformed")
+
+    response = client.post("/v1/messages", json=MESSAGE_REQUEST)
+
+    assert response.status_code == 401
+    assert response.json()["error"]["type"] == "authentication_error"
+
+
+def test_key_change_takes_effect_without_restart(client, api_key_file):
+    api_key_file.write_text("ant-api03-malformed")
+    assert client.post("/v1/messages", json=MESSAGE_REQUEST).status_code == 401
+
+    api_key_file.write_text("sk-ant-mock")
+
+    assert client.post("/v1/messages", json=MESSAGE_REQUEST).status_code == 200

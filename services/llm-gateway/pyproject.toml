@@ -1,6 +1,6 @@
 [project]
 name = "llm-gateway"
-version = "0.1.0"
+version = "0.2.0"
 description = "Proxy in front of the Anthropic Messages API: mock or real upstream, with fault injection."
 requires-python = ">=3.12"
 dependencies = [

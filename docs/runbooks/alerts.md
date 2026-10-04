@@ -54,7 +54,7 @@ A firing fast burn silences the slow burn of the same SLO in Alertmanager.
 
 **Usual causes:** the LLM provider rate-limits or fails, a wrong API key, the gateway is down.
 **Fix:** provider-side problems cannot be fixed in the cluster: reduce traffic, wait, raise the quota; fix the key Secret.
-**Practice:** [llm-rate-limit](../../chaos/scenarios/level-1-application/llm-rate-limit/).
+**Practice:** [llm-rate-limit](../../chaos/scenarios/level-1-application/llm-rate-limit/), [llm-key-invalid](../../chaos/scenarios/level-2-kubernetes/llm-key-invalid/).
 
 ### assistant-latency
 

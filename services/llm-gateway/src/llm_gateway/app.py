@@ -10,6 +10,7 @@ from prometheus_client import make_asgi_app
 
 from llm_gateway import mock_llm
 from llm_gateway.api_errors import error_response
+from llm_gateway.api_key import ApiKeyFile, is_rejected_by_mock
 from llm_gateway.chaos import ChaosState, InvalidFaultError
 from llm_gateway.config import Mode, Settings
 from llm_gateway.metrics import INJECTED_FAULTS, REQUEST_DURATION, REQUESTS
@@ -20,7 +21,8 @@ MILLISECONDS_PER_SECOND = 1000
 
 def create_app(settings: Settings) -> FastAPI:
     chaos = ChaosState()
-    upstream = Upstream(settings.upstream_url, settings.api_key, settings.upstream_timeout_seconds)
+    api_key_file = ApiKeyFile(settings.api_key_file)
+    upstream = Upstream(settings.upstream_url, settings.upstream_timeout_seconds)
 
     @asynccontextmanager
     async def lifespan(_: FastAPI):
@@ -45,8 +47,11 @@ def create_app(settings: Settings) -> FastAPI:
         if chaos.status_code is not None:
             INJECTED_FAULTS.labels(fault="status").inc()
             return error_response(chaos.status_code, "Injected by llm-gateway chaos API")
+        api_key = api_key_file.read()
         if settings.mode is Mode.REAL:
-            return await upstream.create_message(await request.body(), dict(request.headers))
+            return await upstream.create_message(await request.body(), dict(request.headers), api_key)
+        if is_rejected_by_mock(api_key):
+            return error_response(401, "invalid x-api-key")
         await asyncio.sleep(settings.mock_latency_ms / MILLISECONDS_PER_SECOND)
         return JSONResponse(mock_llm.create_message(await request.json()))
 

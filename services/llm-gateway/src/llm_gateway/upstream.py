@@ -8,14 +8,13 @@ MESSAGES_PATH = "/v1/messages"
 
 
 class Upstream:
-    def __init__(self, base_url: str, api_key: str, timeout_seconds: float) -> None:
-        self._api_key = api_key
+    def __init__(self, base_url: str, timeout_seconds: float) -> None:
         self._client = httpx.AsyncClient(base_url=base_url, timeout=timeout_seconds)
 
-    async def create_message(self, body: bytes, request_headers: dict[str, str]) -> Response:
+    async def create_message(self, body: bytes, request_headers: dict[str, str], api_key: str) -> Response:
         headers = {name: request_headers[name] for name in FORWARDED_HEADERS if name in request_headers}
         # The real key lives only in the gateway; clients send a placeholder.
-        headers["x-api-key"] = self._api_key
+        headers["x-api-key"] = api_key
         upstream_response = await self._client.post(MESSAGES_PATH, content=body, headers=headers)
         return Response(
             content=upstream_response.content,
