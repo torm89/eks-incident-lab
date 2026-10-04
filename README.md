@@ -5,7 +5,7 @@ Break a microservices store and an AI shopping assistant on purpose, then detect
 
 ![Amazon EKS](https://img.shields.io/badge/Amazon_EKS-1.36-FF9900?logo=amazoneks&logoColor=white)
 ![OpenTofu](https://img.shields.io/badge/OpenTofu-%E2%89%A51.10-FFDA18?logo=opentofu&logoColor=black)
-![Chaos scenarios](https://img.shields.io/badge/chaos_scenarios-10-red)
+![Chaos scenarios](https://img.shields.io/badge/chaos_scenarios-15-red)
 ![Claude](https://img.shields.io/badge/AI-Claude_Haiku_4.5-D97757?logo=anthropic&logoColor=white)
 ![Cost](https://img.shields.io/badge/cost-~%240.20%2Fhour-brightgreen)
 ![License: MIT](https://img.shields.io/badge/license-MIT-blue)
